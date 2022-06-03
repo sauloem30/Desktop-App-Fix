@@ -1,0 +1,83 @@
+import { createTheme } from "@mui/material";
+
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: "#8E78E1",
+      light: "#E8E6F8",
+    },
+    secondary: {
+      main: "#F7F9FA",
+    },
+    success: {
+      main: "#4CD1AF",
+      light: "#E1F7F1",
+      dark: "#34C759",
+    },
+    danger: {
+      main: "#FB4F51",
+      dark: "#FF3B30",
+    },
+    info: {
+      main: "#2A41E7",
+    },
+  },
+  typography: {
+    fontFamily: "Gilroy",
+    color: "#000000",
+    h1: {
+      fontWeight: 400,
+      fontSize: 48,
+      lineHeight: "150%",
+    },
+    h2: {
+      fontWeight: 700,
+      fontSize: 40,
+      lineHeight: "150%",
+      fontFamily: "Gilroy-Medium",
+      color: "#000000",
+    },
+    h3: {
+      fontWeight: 400,
+      fontSize: 32,
+      lineHeight: "38px",
+    },
+    h4: {
+      fontWeight: 700,
+      fontSize: 24,
+    },
+    h5: {
+      fontSize: 20,
+      fontWeight: 400,
+      lineHeight: "24px",
+      fontFamily: "Nunito Sans",
+    },
+    h6: {
+      fontSize: 14,
+      fontWeight: 400,
+      lineHeight: "24px",
+    },
+    body1: {
+      fontSize: 16,
+      fontWeight: 400,
+      lineHeight: "24px",
+      color: "#000000",
+      fontFamily: "Gilroy",
+    },
+    body2: {
+      fontSize: 16,
+      fontWeight: 400,
+      lineHeight: "24px",
+      color: "#727272",
+      fontFamily: "Nunito Sans",
+    },
+    body3: {
+      fontSize: 20,
+      fontWeight: 400,
+      lineHeight: "24px",
+      fontFamily: "Gilroy",
+    },
+  },
+});
+
+export default theme;
