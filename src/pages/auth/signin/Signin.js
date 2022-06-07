@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -13,7 +13,8 @@ import logo from "../../../assests/images/app-logo.png";
 import CustomButton from "../../../components/common/Button";
 import Box from "@mui/material/Box";
 import { Link } from "react-router-dom";
-
+import axiosInstance from "../../../utils/axios-instance";
+import { useNavigate } from "react-router-dom";
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.white,
@@ -43,6 +44,47 @@ const useStyles = makeStyles((theme) => ({
 const Signin = () => {
   const classes = useStyles();
   const textRef = useRef(null);
+  let navigate = useNavigate();
+
+  const [emailAddress, setEmailAddress] = useState("");
+  const [password, setPassword] = useState("");
+  const [user, setUser] = useState({});
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    console.log(axiosInstance, "axiosInstance");
+    const response = await axiosInstance.request({
+      method: "POST",
+      url: `${process.env.REACT_APP_API_BASE_URL}/login/authenticate`,
+      data: {
+        application_type: "desktop",
+        email_address: emailAddress,
+        password: password,
+      },
+    });
+    console.log(response.data.success, "redsssssssss");
+    if (response.data.success === true) {
+      navigate("/currentproject");
+    }
+  };
+
+  useEffect(() => {
+    const checkSession = async () => {
+      const responseJSON = await axiosInstance.request({
+        method: "GET",
+        url: `${process.env.REACT_APP_API_BASE_URL}login/check_session`,
+      });
+      const isLoggedIn = responseJSON.data.success;
+      console.log(isLoggedIn, "isLoggedInisLoggedIn");
+      setUser((val) => {
+        return { ...val, isLoggedIn };
+      });
+      if (isLoggedIn) {
+        navigate("/currentproject");
+      }
+    };
+    checkSession();
+  }, [setUser]);
 
   return (
     <Box>
@@ -75,7 +117,7 @@ const Signin = () => {
               <form
                 className={classes.formContent}
                 noValidate
-                onSubmit={() => {}}
+                onSubmit={handleLogin}
                 autoComplete={() => {}}
               >
                 <FormControl
@@ -94,8 +136,8 @@ const Signin = () => {
                     label=""
                     fullWidth
                     type="email"
-                    // value={emailAddress}
-                    onChange={() => {}}
+                    value={emailAddress}
+                    onChange={(event) => setEmailAddress(event.target.value)}
                     id="email"
                     placeholder="Enter your email"
                   />
@@ -117,9 +159,8 @@ const Signin = () => {
                     label="Password"
                     fullWidth
                     type="password"
-                    // value={password}
-                    // onChange={(event) => setPassword(event.target.value)}
-                    onChange={() => {}}
+                    value={password}
+                    onChange={(event) => setPassword(event.target.value)}
                     id="password"
                     placeholder="Enter your password"
                   />
@@ -155,7 +196,7 @@ const Signin = () => {
                     bgColor="#8E78E1"
                     borderRadius="4px"
                     padding="12px 40px"
-                    onClick={() => {}}
+                    onClick={handleLogin}
                   />
                 </div>
               </form>
