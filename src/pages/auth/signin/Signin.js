@@ -49,9 +49,12 @@ const Signin = () => {
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
   const [user, setUser] = useState({});
+  const [isRemember, setIsRemember] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleLogin = async (event) => {
     event.preventDefault();
+    setErrorMessage("");
     console.log(axiosInstance, "axiosInstance");
     const response = await axiosInstance.request({
       method: "POST",
@@ -62,10 +65,20 @@ const Signin = () => {
         password: password,
       },
     });
-    console.log(response.data.success, "redsssssssss");
+    console.log(response.data, "redsssssssss");
     if (response.data.success === true) {
       navigate("/currentproject");
+    } else {
+      setErrorMessage(response.data.err_msg);
+      setEmailAddress("");
+      setPassword("");
+      if (textRef.current) {
+        textRef.current.focus();
+      }
     }
+  };
+  const handleChange = (event) => {
+    setIsRemember(event.target.checked);
   };
 
   useEffect(() => {
@@ -118,7 +131,7 @@ const Signin = () => {
                 className={classes.formContent}
                 noValidate
                 onSubmit={handleLogin}
-                autoComplete={() => {}}
+                autoComplete={isRemember ? "on" : "off"}
               >
                 <FormControl
                   variant="standard"
@@ -165,12 +178,30 @@ const Signin = () => {
                     placeholder="Enter your password"
                   />
                 </FormControl>
+                {errorMessage && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <Typography style={{ color: "red" }}>
+                      {errorMessage}
+                    </Typography>
+                  </div>
+                )}
 
                 <Box sx={{ display: "flex", marginBottom: "40px" }}>
                   <div style={{ textAlign: "left", flex: 1 }}>
                     <Typography>
                       <FormControlLabel
-                        control={<Checkbox onChange={() => {}} />}
+                        control={
+                          <Checkbox
+                            onChange={handleChange}
+                            checked={isRemember}
+                          />
+                        }
                         label="Remember me"
                       />
                     </Typography>
@@ -189,7 +220,6 @@ const Signin = () => {
                     onClick={() => {}}
                     marginRight="32px"
                   />
-
                   <CustomButton
                     text="Sign In"
                     color="#FFFFFF"

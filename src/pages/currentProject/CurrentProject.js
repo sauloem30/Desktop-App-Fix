@@ -10,6 +10,8 @@ import Divider from "@mui/material/Divider";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
+import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
+
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.white,
@@ -18,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
   },
 
   loginContainer: {
-    padding: "40px 0px",
+    padding: "0px 0px",
     textAlign: "center",
   },
 
@@ -28,7 +30,7 @@ const useStyles = makeStyles((theme) => ({
   },
   loginContent: {
     [theme.breakpoints.down("sm")]: {
-      padding: "24px 0px 20px 0px",
+      padding: "24px 0px 0px 0px",
     },
   },
   formContent: {
@@ -46,11 +48,18 @@ const style = {
   bgcolor: "background.paper",
 };
 
+const itemList = [
+  { name: "First project", time: "12:42", icon: "" },
+  { name: "Second project", time: "5:42", icon: "" },
+  { name: "Third project", time: "10:42", icon: "start" },
+  { name: "Forth project", time: "15:24", icon: "pause" },
+];
+
 const CurrentProject = () => {
   const classes = useStyles();
 
   return (
-    <Box>
+    <Box sx={{ height: "fit-content" }}>
       <Grid
         container
         sx={{
@@ -67,55 +76,92 @@ const CurrentProject = () => {
           >
             <img
               src={logo}
-              style={{ maxHeight: 30, width: "203px", marginBottom: "20px" }}
+              style={{
+                maxHeight: 30,
+                width: "162px",
+                marginBottom: "20px",
+                marginTop: "20px",
+              }}
               alt="logo"
             />
-            <Divider sx={{ border: "2px solid #F2F3F7" }} />
+            <Box sx={{ border: "1px solid #F2F3F7" }} />
             <Typography variant="h4" sx={{ marginTop: "32px" }}>
               Current project
             </Typography>
-            <Typography variant="body4" sx={{ marginBottom: "22px" }}>
-              00:00:15
+            <Typography variant="body4" sx={{ marginBottom: "12px" }}>
+              <Box>00:00:15</Box>
             </Typography>
-            <br></br>
-            <Typography
-              variant="body5"
-              sx={{ marginTop: "10px", marginBottom: "32px" }}
-            >
-              No weekly limit
+            <Typography variant="body5">
+              <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
             </Typography>
-            <br></br>
             <Typography
               variant="body6"
-              sx={{ marginTop: "20px", marginBottom: "32px" }}
+              sx={{ marginTop: "10px", marginBottom: "32px" }}
             >
               Total today: 8:12
             </Typography>
             <div className={classes.loginContent}>
               <List sx={style} component="nav" aria-label="mailbox folders">
-                <ListItem button>
+                <ListItem
+                  button
+                  sx={{ backgroundColor: "#F2F3F7", padding: "17px 24px" }}
+                >
                   <ListItemText>
-                    <Typography variant="subheading">Projects:</Typography>
+                    <Typography variant="subheading1">Projects:</Typography>
                   </ListItemText>
                 </ListItem>
-                <ListItem button className={classes.ListItem}>
-                  <ListItemText primary="First project name" />
-                  <ListItemText primary="12:42" sx={{ textAlign: "right" }} />
-                </ListItem>
-                <Divider />
-                <ListItem button divider className={classes.ListItem}>
-                  <ListItemText primary="Second project name" />
-                  <ListItemText primary="12:42" sx={{ textAlign: "right" }} />
-                </ListItem>
-                <ListItem button className={classes.ListItem}>
-                  <ListItemText primary="Third project name" />
-                  <ListItemText primary="12:42" sx={{ textAlign: "right" }} />
-                </ListItem>
-                <Divider light />
-                <ListItem button className={classes.ListItem}>
-                  <ListItemText primary="Active project name" />
-                  <ListItemText primary="12:42" sx={{ textAlign: "right" }} />
-                </ListItem>
+
+                {itemList.map((item) => {
+                  return (
+                    <>
+                      <ListItem
+                        button
+                        className={classes.ListItem}
+                        sx={{
+                          height: 54,
+                          "&:focus": {
+                            background: "#E1F7F1",
+                            "&:hover": {
+                              background: "#F7F9FA",
+                            },
+                          },
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            marginLeft: "8px",
+                          }}
+                        >
+                          {item.icon === "start" ? (
+                            <StartIcon />
+                          ) : item.icon === "pause" ? (
+                            <PauseIcon />
+                          ) : (
+                            ""
+                          )}
+                          <ListItemText
+                            primary={item.name}
+                            sx={{
+                              marginLeft: "8px",
+                              "& span":
+                                item.icon === "start"
+                                  ? { color: "#2A41E7" }
+                                  : { color: "#000000" },
+                            }}
+                          />
+                        </Box>
+                        <ListItemText
+                          primary={item.time}
+                          sx={{ textAlign: "right" }}
+                        />
+                      </ListItem>
+                      <Divider light />
+                    </>
+                  );
+                })}
               </List>
             </div>
           </Paper>
