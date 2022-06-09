@@ -1,8 +1,13 @@
-import React, { useState, useRef } from "react";
+import React, {
+  useState,
+  useRef,
+  useCallback,
+  useEffect,
+  createRef,
+} from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-
 import { makeStyles, useTheme } from "@mui/styles";
 import logo from "../../assests/images/app-logo.png";
 import Box from "@mui/material/Box";
@@ -11,7 +16,7 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
-
+import axiosInstance from "../../utils/axios-instance";
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.white,
@@ -48,15 +53,49 @@ const style = {
   bgcolor: "background.paper",
 };
 
-const itemList = [
-  { name: "First project", time: "12:42", icon: "" },
-  { name: "Second project", time: "5:42", icon: "" },
-  { name: "Third project", time: "10:42", icon: "start" },
-  { name: "Forth project", time: "15:24", icon: "pause" },
-];
+// const itemList = [
+//   { name: "First project name", time: "12:42", icon: "" },
+//   { name: "Second project name", time: "5:42", icon: "" },
+//   { name: "Third project name", time: "10:42", icon: "start" },
+//   { name: "Active project name", time: "15:24", icon: "pause" },
+// ];
 
 const CurrentProject = () => {
   const classes = useStyles();
+  const ref = createRef(null);
+  const [projects, setProjects] = useState([]);
+
+  //project Active/deactive state
+  const [totalActiveProjects, setTotalActiveProjects] = useState(0);
+  const [totalInactiveProjects, setTotalInactiveProjects] = useState(0);
+
+  //screenshot
+
+  const loadProjectActiveCounts = useCallback(async () => {
+    try {
+      const responseJSON = await axiosInstance.request({
+        method: "GET",
+        url: `${process.env.REACT_APP_API_BASE_URL}/api/projects/get/active_counts`,
+      });
+
+      if (responseJSON) {
+        const { active, inactive } = responseJSON;
+        setTotalActiveProjects(active);
+        setTotalInactiveProjects(inactive);
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    axiosInstance
+      .request({
+        method: "GET",
+        url: `${process.env.REACT_APP_API_BASE_URL}/projects?is_active=true&search&batch_no=0`,
+      })
+      .then((res) => setProjects(res));
+  }, []);
+
+  let itemData = projects?.data?.result || [];
 
   return (
     <Box sx={{ height: "fit-content" }}>
@@ -111,7 +150,7 @@ const CurrentProject = () => {
                   </ListItemText>
                 </ListItem>
 
-                {itemList.map((item) => {
+                {itemData.map((item) => {
                   return (
                     <>
                       <ListItem

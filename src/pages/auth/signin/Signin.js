@@ -55,7 +55,6 @@ const Signin = () => {
   const handleLogin = async (event) => {
     event.preventDefault();
     setErrorMessage("");
-    console.log(axiosInstance, "axiosInstance");
     const response = await axiosInstance.request({
       method: "POST",
       url: `${process.env.REACT_APP_API_BASE_URL}/login/authenticate`,
@@ -65,7 +64,6 @@ const Signin = () => {
         password: password,
       },
     });
-    console.log(response.data, "redsssssssss");
     if (response.data.success === true) {
       navigate("/currentproject");
     } else {

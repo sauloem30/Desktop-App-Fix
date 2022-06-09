@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
@@ -9,6 +9,9 @@ import { makeStyles, useTheme } from "@mui/styles";
 import logo from "../../../assests/images/app-logo.png";
 import CustomButton from "../../../components/common/Button";
 import Box from "@mui/material/Box";
+import axiosInstance from "../../../utils/axios-instance";
+import Signin from "../signin/Signin";
+import { useNavigate } from "react-router-dom";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -35,9 +38,35 @@ const useStyles = makeStyles((theme) => ({
   },
 }));
 
-const ForgetPassword = () => {
+const ForgotPassword = () => {
   const classes = useStyles();
   const textRef = useRef(null);
+  let navigate = useNavigate();
+
+  const [errorMessage, setErrorMessage] = useState("");
+  const [emailAddress, setEmailAddress] = useState("");
+
+  const handleLogin = async (event) => {
+    event.preventDefault();
+    setErrorMessage("");
+    const response = await axiosInstance.request({
+      method: "POST",
+      url: `${process.env.REACT_APP_API_BASE_URL}/accounts/forgot_password`,
+      data: {
+        email_address: emailAddress,
+      },
+    });
+    if (response.data.success === true) {
+      navigate("/confirmation");
+    } else {
+      setErrorMessage(response.data.err_msg);
+      setEmailAddress("");
+      if (textRef.current) {
+        textRef.current.focus();
+      }
+    }
+  };
+
   return (
     <Box>
       <Grid
@@ -68,7 +97,7 @@ const ForgetPassword = () => {
               <form
                 className={classes.formContent}
                 noValidate
-                onSubmit={() => {}}
+                onSubmit={handleLogin}
                 autoComplete={() => {}}
               >
                 <FormControl
@@ -87,12 +116,25 @@ const ForgetPassword = () => {
                     label=""
                     fullWidth
                     type="email"
-                    // value={emailAddress}
-                    onChange={() => {}}
+                    value={emailAddress}
+                    onChange={(event) => setEmailAddress(event.target.value)}
                     id="email"
                     // placeholder="nat@thriveva.com"
                   />
                 </FormControl>
+                {errorMessage && (
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "center",
+                      flex: 1,
+                    }}
+                  >
+                    <Typography style={{ color: "red" }}>
+                      {errorMessage}
+                    </Typography>
+                  </div>
+                )}
                 <div style={{ display: "flex", justifyContent: "center" }}>
                   <CustomButton
                     text="Send instructions"
@@ -102,7 +144,7 @@ const ForgetPassword = () => {
                     bgColor="#8E78E1"
                     borderRadius="4px"
                     padding="12px 40px"
-                    onClick={() => {}}
+                    onClick={handleLogin}
                   />
                 </div>
               </form>
@@ -114,4 +156,4 @@ const ForgetPassword = () => {
   );
 };
 
-export default ForgetPassword;
+export default ForgotPassword;
