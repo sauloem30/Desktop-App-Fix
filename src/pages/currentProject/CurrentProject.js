@@ -17,6 +17,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
 import axiosInstance from "../../utils/axios-instance";
+
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.white,
@@ -69,8 +70,6 @@ const CurrentProject = () => {
   const [totalActiveProjects, setTotalActiveProjects] = useState(0);
   const [totalInactiveProjects, setTotalInactiveProjects] = useState(0);
 
-  //screenshot
-
   const loadProjectActiveCounts = useCallback(async () => {
     try {
       const responseJSON = await axiosInstance.request({
@@ -90,12 +89,13 @@ const CurrentProject = () => {
     axiosInstance
       .request({
         method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/projects?is_active=true&search&batch_no=0`,
+        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
       })
-      .then((res) => setProjects(res));
+      .then((res) => {
+        const { data } = res;
+        setProjects(data?.result || []);
+      });
   }, []);
-
-  let itemData = projects?.data?.result || [];
 
   return (
     <Box sx={{ height: "fit-content" }}>
@@ -150,7 +150,7 @@ const CurrentProject = () => {
                   </ListItemText>
                 </ListItem>
 
-                {itemData.map((item) => {
+                {projects.map((project) => {
                   return (
                     <>
                       <ListItem
@@ -158,12 +158,14 @@ const CurrentProject = () => {
                         className={classes.ListItem}
                         sx={{
                           height: 54,
-                          "&:focus": {
-                            background: "#E1F7F1",
-                            "&:hover": {
-                              background: "#F7F9FA",
-                            },
+                          // "&:focus": {
+                          background: project.is_active ? "#E1F7F1" : "inherit",
+                          "&:hover": {
+                            background: project.is_active
+                              ? "#E1F7F1"
+                              : "#F7F9FA",
                           },
+                          // },
                         }}
                       >
                         <Box
@@ -174,26 +176,27 @@ const CurrentProject = () => {
                             marginLeft: "8px",
                           }}
                         >
-                          {item.icon === "start" ? (
+                          {/* {project.icon === "start" ? (
                             <StartIcon />
-                          ) : item.icon === "pause" ? (
+                          ) : project.icon === "pause" ? (
                             <PauseIcon />
                           ) : (
                             ""
-                          )}
+                          )} */}
+                          {project.is_active && <PauseIcon />}
                           <ListItemText
-                            primary={item.name}
+                            primary={project.name}
                             sx={{
                               marginLeft: "8px",
                               "& span":
-                                item.icon === "start"
+                                project.icon === "start"
                                   ? { color: "#2A41E7" }
                                   : { color: "#000000" },
                             }}
                           />
                         </Box>
                         <ListItemText
-                          primary={item.time}
+                          primary={projects.time}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>
