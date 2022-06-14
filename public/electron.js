@@ -81,26 +81,26 @@ setInterval(() => {
         image.thumbnail.toPNG(),
         () => {
           //*******************NEW window to display screenshot , might be helpful in future */
-          // const window = new BrowserWindow({
-          //   maximizable: false,
-          //   width: 300,
-          //   height: 300,
-          //   modal: true,
-          //   x: 20,
-          //   y: 20,
-          //   autoHideMenuBar: true,
-          //   frame: false,
-          // });
-          // window.loadURL(`file://${path.join(__dirname, "sample.html")}`);
-          // setTimeout(() => {
-          //   window.close();
-          // fs.unlink("./images/screenshot.png", function (err) {
-          //   if (err) return console.log(err);
-          //   console.log("file deleted successfully");
-          // });
-          // }, 5000);
+          const window = new BrowserWindow({
+            maximizable: false,
+            width: 300,
+            height: 300,
+            modal: true,
+            x: 20,
+            y: 20,
+            autoHideMenuBar: true,
+            frame: false,
+          });
+          window.loadURL(`file://${path.join(__dirname, "sample.html")}`);
+          setTimeout(() => {
+            window.close();
+            fs.unlink("./images/screenshot.png", function (err) {
+              if (err) return console.log(err);
+              console.log("file deleted successfully");
+            });
+          }, 5000);
           console.log("Image Added Successfully");
         }
       );
     });
-}, 10 * 60 * 1000);
+}, 5000);

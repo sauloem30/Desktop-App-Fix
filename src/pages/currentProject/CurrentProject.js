@@ -66,9 +66,27 @@ const CurrentProject = () => {
   const ref = createRef(null);
   const [projects, setProjects] = useState([]);
 
+  const initialState = 0;
+  const [timer, setTimer] = React.useState(initialState);
+  const [isActive, setIsActive] = React.useState({});
+  const [isPaused, setIsPaused] = React.useState(false);
+  const countRef = React.useRef(null);
+
   //project Active/deactive state
   const [totalActiveProjects, setTotalActiveProjects] = useState(0);
   const [totalInactiveProjects, setTotalInactiveProjects] = useState(0);
+
+  useEffect(() => {
+    axiosInstance
+      .request({
+        method: "GET",
+        url: `${process.env.REACT_APP_API_BASE_URL}/projects?is_active=true&search=&batch_no=0`,
+      })
+      .then((res) => {
+        const { data } = res;
+        setProjects(data?.result || []);
+      });
+  }, []);
 
   const loadProjectActiveCounts = useCallback(async () => {
     try {
@@ -85,17 +103,54 @@ const CurrentProject = () => {
     } catch {}
   }, []);
 
-  useEffect(() => {
-    axiosInstance
-      .request({
-        method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
-      })
-      .then((res) => {
-        const { data } = res;
-        setProjects(data?.result || []);
-      });
-  }, []);
+  const formatTime = (timer) => {
+    const getSeconds = `0${timer % 60}`.slice(-2);
+    const minutes = `${Math.floor(timer / 60)}`;
+    const getMinutes = `0${minutes % 60}`.slice(-2);
+    const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
+
+    return `${getHours} : ${getMinutes} : ${getSeconds}`;
+  };
+
+  const TimeLog = (timer) => {
+    const getSeconds = `0${timer % 60}`.slice(-2);
+    const minutes = `${Math.floor(timer / 60)}`;
+    const getMinutes = `0${minutes % 60}`.slice(-2);
+    const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
+
+    return `${getHours} : ${getMinutes}`;
+  };
+
+  const handleStart = (projectId) => {
+    setIsActive(projectId);
+    let project = projects.filter((item, i) => item.id === projectId);
+    console.log("project===>", project);
+    if (project) {
+      setIsPaused(true);
+      countRef.current = setInterval(() => {
+        setTimer((timer) => timer + 1);
+      }, 1000);
+    } else {
+      return null;
+    }
+  };
+
+  const handlePause = (ProjectId) => {
+    let project = projects.filter((item, i) => item.id === ProjectId);
+    if (project) {
+      setIsPaused(false);
+      setIsActive(false);
+    } else {
+      return null;
+    }
+  };
+
+  // const handleResume = (e, i) => {
+  //   // setIsPaused(true);
+  //   countRef.current = setInterval(() => {
+  //     setTimer((timer) => timer + 1);
+  //   }, 1000);
+  // };
 
   return (
     <Box sx={{ height: "fit-content" }}>
@@ -128,7 +183,7 @@ const CurrentProject = () => {
               Current project
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
-              <Box>00:00:15</Box>
+              <Box>{formatTime(timer)}</Box>
             </Typography>
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
@@ -150,10 +205,11 @@ const CurrentProject = () => {
                   </ListItemText>
                 </ListItem>
 
-                {projects.map((project) => {
+                {projects.map((project, index) => {
                   return (
                     <>
                       <ListItem
+                        key={index}
                         button
                         className={classes.ListItem}
                         sx={{
@@ -183,20 +239,29 @@ const CurrentProject = () => {
                           ) : (
                             ""
                           )} */}
-                          {project.is_active && <PauseIcon />}
+                          {isActive !== project.id ? (
+                            <Box onClick={() => handleStart(project.id)}>
+                              {<StartIcon />}
+                            </Box>
+                          ) : (
+                            <Box onClick={() => handlePause(project.id)}>
+                              {<PauseIcon />}
+                            </Box>
+                          )}
+
                           <ListItemText
                             primary={project.name}
                             sx={{
                               marginLeft: "8px",
                               "& span":
-                                project.icon === "start"
+                                project.name === "start"
                                   ? { color: "#2A41E7" }
                                   : { color: "#000000" },
                             }}
                           />
                         </Box>
                         <ListItemText
-                          primary={projects.time}
+                          primary={TimeLog(timer)}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>
