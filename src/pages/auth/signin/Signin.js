@@ -51,8 +51,8 @@ const Signin = () => {
   const textRef = useRef(null);
   let navigate = useNavigate();
 
-  const [emailAddress, setEmailAddress] = useState("");
-  const [password, setPassword] = useState("");
+  const [emailAddress, setEmailAddress] = useState("vikas@yopmail.com");
+  const [password, setPassword] = useState("3L3m0n_masterkey##");
   const [user, setUser] = useState({});
   const [isRemember, setIsRemember] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");

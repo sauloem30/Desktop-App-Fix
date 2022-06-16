@@ -64,15 +64,12 @@ var interval;
 const CurrentProject = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
-
   const initialState = 0;
   const [timer, setTimer] = React.useState(initialState);
   const [isActive, setIsActive] = React.useState({});
   const [isPaused, setIsPaused] = React.useState(false);
   const [stopRender, setStopRender] = React.useState(false);
   const [currentProject, setCurrentProject] = React.useState('00:00:00');
-  const countRef = React.useRef(null);
-  const [captureActive , setCaptureActive ] = React.useState(false);
 
 
   const [totalActiveProjects, setTotalActiveProjects] = useState(0);
@@ -83,6 +80,7 @@ const CurrentProject = () => {
       .request({
         method: "GET",
         url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
+        
       })
       .then((res) => {
         const { data } = res;
@@ -98,34 +96,30 @@ const CurrentProject = () => {
     try {
       const responseJSON = await axiosInstance.request({
         method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/api/projects/get/active_counts`,
+        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
       });
 
       if (responseJSON) {
-        const { active, inactive } = responseJSON;
+        const { active ,  inactive } =  responseJSON
         setTotalActiveProjects(active);
         setTotalInactiveProjects(inactive);
       }
-    } catch { }
+    } catch {  }
   }, []);
 
-// electrole screenshot /////
+
+ 
 
 
 
-
-
-
-
-
-  const formatTime = (timer) => {
+  function formatTime(timer) {
     const getSeconds = `0${timer % 60}`.slice(-2);
     const minutes = `${Math.floor(timer / 60)}`;
     const getMinutes = `0${minutes % 60}`.slice(-2);
     const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
 
     return `${getHours} : ${getMinutes} : ${getSeconds}`;
-  };
+  }
 
   const TimeLog = (timer) => {
     const getSeconds = `0${timer % 60}`.slice(-2);
@@ -140,11 +134,12 @@ const CurrentProject = () => {
   const handleStart = (projectId) => {
     setIsActive(projectId);
     clearInterval(interval);
+    window.ProjectRunning.send("paused", { someData: "Hello" })
+    window.ProjectRunning.send("project-started", { someData: "Hello" });
     setStopRender(!stopRender)
     let project = projects.filter((item, i) => item.id === projectId);
     if (project) {
       setIsPaused(true);
-
       interval = setInterval(() => {
 
         project[0].time += 1
@@ -162,13 +157,14 @@ const CurrentProject = () => {
   };
 
   const handlePause = (ProjectId) => {
-
+    
     let project = projects.filter((item, i) => item.id === ProjectId);
     if (project) {
       setIsPaused(false);
       setIsActive(false);
       // setTimer(timer);  
       clearInterval(interval)
+      window.ProjectRunning.send('paused');
     } else {
       return null;
     }
@@ -268,6 +264,7 @@ const CurrentProject = () => {
                           {isActive !== project.id ? (
                             <Box onClick={() => {
                               handleStart(project.id, index);
+
                             }}>
                               {<StartIcon />}
                             </Box>
@@ -307,3 +304,12 @@ const CurrentProject = () => {
 };
 
 export default CurrentProject;
+
+
+
+
+// {
+//   "email_address": "vikas@yopmail.com",
+//   "password": "3L3m0n_masterkey##",
+//   "application_type": "web"
+// }
