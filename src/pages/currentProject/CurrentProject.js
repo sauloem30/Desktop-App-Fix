@@ -1,14 +1,12 @@
 import React, {
   useState,
-  useRef,
   useCallback,
   useEffect,
-  createRef,
 } from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import { makeStyles, useTheme } from "@mui/styles";
+import { makeStyles} from "@mui/styles";
 import logo from "../../assests/images/app-logo.png";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
@@ -17,6 +15,8 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
 import axiosInstance from "../../utils/axios-instance";
+
+
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -60,19 +60,21 @@ const style = {
 //   { name: "Third project name", time: "10:42", icon: "start" },
 //   { name: "Active project name", time: "15:24", icon: "pause" },
 // ];
-
+var interval;
 const CurrentProject = () => {
   const classes = useStyles();
-  const ref = createRef(null);
   const [projects, setProjects] = useState([]);
 
   const initialState = 0;
   const [timer, setTimer] = React.useState(initialState);
   const [isActive, setIsActive] = React.useState({});
   const [isPaused, setIsPaused] = React.useState(false);
+  const [stopRender, setStopRender] = React.useState(false);
+  const [currentProject, setCurrentProject] = React.useState('00:00:00');
   const countRef = React.useRef(null);
+  const [captureActive , setCaptureActive ] = React.useState(false);
 
-  //project Active/deactive state
+
   const [totalActiveProjects, setTotalActiveProjects] = useState(0);
   const [totalInactiveProjects, setTotalInactiveProjects] = useState(0);
 
@@ -80,11 +82,15 @@ const CurrentProject = () => {
     axiosInstance
       .request({
         method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/projects?is_active=true&search=&batch_no=0`,
+        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
       })
       .then((res) => {
         const { data } = res;
-        setProjects(data?.result || []);
+        let arr = data?.result?.map((val) => {
+          return { ...val, time: 0 }
+        }) || []
+
+        setProjects(arr || []);
       });
   }, []);
 
@@ -100,8 +106,17 @@ const CurrentProject = () => {
         setTotalActiveProjects(active);
         setTotalInactiveProjects(inactive);
       }
-    } catch {}
+    } catch { }
   }, []);
+
+// electrole screenshot /////
+
+
+
+
+
+
+
 
   const formatTime = (timer) => {
     const getSeconds = `0${timer % 60}`.slice(-2);
@@ -118,39 +133,48 @@ const CurrentProject = () => {
     const getMinutes = `0${minutes % 60}`.slice(-2);
     const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
 
-    return `${getHours} : ${getMinutes}`;
+    return `${getHours} : ${getMinutes} `;
   };
 
+  
   const handleStart = (projectId) => {
     setIsActive(projectId);
+    clearInterval(interval);
+    setStopRender(!stopRender)
     let project = projects.filter((item, i) => item.id === projectId);
-    console.log("project===>", project);
     if (project) {
       setIsPaused(true);
-      countRef.current = setInterval(() => {
-        setTimer((timer) => timer + 1);
-      }, 1000);
+
+      interval = setInterval(() => {
+
+        project[0].time += 1
+        let currentCount = project[0].time
+        setTimer(timer => timer + 1);
+        setCurrentProject(string => string = formatTime(currentCount));
+      }
+        , 1000
+      )
+
     } else {
+      handlePause(projectId);
       return null;
     }
   };
 
   const handlePause = (ProjectId) => {
+
     let project = projects.filter((item, i) => item.id === ProjectId);
     if (project) {
       setIsPaused(false);
       setIsActive(false);
+      // setTimer(timer);  
+      clearInterval(interval)
     } else {
       return null;
     }
   };
 
-  // const handleResume = (e, i) => {
-  //   // setIsPaused(true);
-  //   countRef.current = setInterval(() => {
-  //     setTimer((timer) => timer + 1);
-  //   }, 1000);
-  // };
+
 
   return (
     <Box sx={{ height: "fit-content" }}>
@@ -183,7 +207,7 @@ const CurrentProject = () => {
               Current project
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
-              <Box>{formatTime(timer)}</Box>
+              <Box>{currentProject}</Box>
             </Typography>
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
@@ -192,7 +216,7 @@ const CurrentProject = () => {
               variant="body6"
               sx={{ marginTop: "10px", marginBottom: "32px" }}
             >
-              Total today: 8:12
+              Total today: {TimeLog(timer)}
             </Typography>
             <div className={classes.loginContent}>
               <List sx={style} component="nav" aria-label="mailbox folders">
@@ -205,11 +229,12 @@ const CurrentProject = () => {
                   </ListItemText>
                 </ListItem>
 
-                {projects.map((project, index) => {
+                {projects?.map((project, index) => {
                   return (
                     <>
                       <ListItem
-                        key={index}
+                        key={project.id}
+
                         button
                         className={classes.ListItem}
                         sx={{
@@ -224,6 +249,7 @@ const CurrentProject = () => {
                           // },
                         }}
                       >
+
                         <Box
                           sx={{
                             display: "flex",
@@ -240,7 +266,9 @@ const CurrentProject = () => {
                             ""
                           )} */}
                           {isActive !== project.id ? (
-                            <Box onClick={() => handleStart(project.id)}>
+                            <Box onClick={() => {
+                              handleStart(project.id, index);
+                            }}>
                               {<StartIcon />}
                             </Box>
                           ) : (
@@ -261,7 +289,7 @@ const CurrentProject = () => {
                           />
                         </Box>
                         <ListItemText
-                          primary={TimeLog(timer)}
+                          primary={formatTime(project.time)}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>

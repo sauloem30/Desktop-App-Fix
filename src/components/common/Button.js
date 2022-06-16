@@ -10,6 +10,7 @@ const CustomButton = ({
   onClick,
   color,
   marginRight,
+  width
 }) => {
   return (
     <div>
@@ -19,13 +20,14 @@ const CustomButton = ({
           backgroundColor: bgColor,
           padding: padding,
           borderRadius: borderRadius,
+          width: width,
           color: color,
           fontFamily: "'Gilroy'",
           marginRight: marginRight,
           textTransform: "capitalize",
         }}
       >
-        <Typography variant="body3">{text}</Typography>
+        <Typography fontSize={"15px"} variant="body3">{text}</Typography>
       </Button>
     </div>
   );

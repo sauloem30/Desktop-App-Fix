@@ -15,6 +15,10 @@ import Box from "@mui/material/Box";
 import { Link } from "react-router-dom";
 import axiosInstance from "../../../utils/axios-instance";
 import { useNavigate } from "react-router-dom";
+
+
+
+
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.white,
@@ -33,12 +37,13 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   formContent: {
-    marginTop: 10,
+    marginTop: -50,
     "& > *": {
       marginBottom: 10,
     },
     width: "100%",
   },
+  
 }));
 
 const Signin = () => {
@@ -92,10 +97,11 @@ const Signin = () => {
       });
       if (isLoggedIn) {
         navigate("/currentproject");
+        
       }
     };
     checkSession();
-  }, [setUser]);
+  }, [setUser]);  
 
   return (
     <Box>
@@ -115,12 +121,12 @@ const Signin = () => {
           >
             <img
               src={logo}
-              style={{ maxHeight: 30, width: "203px" }}
+              style={{ maxHeight: 30 , marginTop: '20px'}}
               alt="logo"
             />
             <Typography
               variant="h2"
-              sx={{ marginTop: "20px", marginBottom: "32px" }}
+              sx={{ marginTop: "20px", fontSize: '30px' ,   marginBottom: "-20px" }}
             >
               Sign in to {`${AppConfig.product_name}`}
             </Typography>
@@ -138,7 +144,7 @@ const Signin = () => {
                   <InputLabel shrink htmlFor="bootstrap-input">
                     <Typography variant="body2">Email</Typography>
                   </InputLabel>
-                  <CustomFieldInput
+                  <CustomFieldInput 
                     inputRef={(el) => {
                       textRef.current = el;
                     }}
@@ -198,23 +204,24 @@ const Signin = () => {
                           <Checkbox
                             onChange={handleChange}
                             checked={isRemember}
+                            
                           />
                         }
                         label="Remember me"
                       />
                     </Typography>
                   </div>
-                  <Typography sx={{ paddingTop: "8px" }} variant="body1">
-                    <Link to="/forgotpassword">Forgot Password?</Link>
+                  <Typography sx={{ paddingTop: "1px" }} variant="body1">
+                    <Link to="/forgotpassword" style={{color: 'black' , textDecoration: 'none' , fontSize:'12px'  }} >Forgot Password?</Link>
                   </Typography>
                 </Box>
-                <div style={{ display: "flex", justifyContent: "center" }}>
+                <div style={{ display: "flex", justifyContent: "center"  , marginTop:'-20px'}}>
                   <CustomButton
                     text="Cancel"
                     color="#000000"
                     bgColor="#E8E6F8"
                     borderRadius="4px"
-                    padding="12px 40px"
+                    width="120px"
                     onClick={() => {}}
                     marginRight="32px"
                   />
@@ -223,7 +230,7 @@ const Signin = () => {
                     color="#FFFFFF"
                     bgColor="#8E78E1"
                     borderRadius="4px"
-                    padding="12px 40px"
+                    width="120px"
                     onClick={handleLogin}
                   />
                 </div>
