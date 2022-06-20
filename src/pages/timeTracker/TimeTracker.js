@@ -66,10 +66,13 @@ const CurrentProject = () => {
   const [projects, setProjects] = useState([]);
   const initialState = 0;
   const [timer, setTimer] = React.useState(initialState);
-  const [isActive, setIsActive] = React.useState({});
+  const [isActive, setIsActive] = React.useState(false);
   const [isPaused, setIsPaused] = React.useState(false);
   const [stopRender, setStopRender] = React.useState(false);
-  const [currentProject, setCurrentProject] = React.useState('00:00:00');
+  const [currentProject, setCurrentProject] = React.useState('00:00');
+  const [timeLogData , setTimeLogData ] = React.useState(false);
+  const [projectName , setProjectName] = React.useState('Select a project');
+  const [currentTimer , setCurrentTImer ] = React.useState(0);
 
 
   const [totalActiveProjects, setTotalActiveProjects] = useState(0);
@@ -92,21 +95,56 @@ const CurrentProject = () => {
       });
   }, []);
 
-  const loadProjectActiveCounts = useCallback(async () => {
-    try {
-      const responseJSON = await axiosInstance.request({
-        method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
-      });
+  
+  // const loadProjectActiveCounts = useCallback(async () => {
+  //   try {
+  //     const responseJSON = await axiosInstance.request({
+  //       method: "GET",
+  //       url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
+  //     });
 
-      if (responseJSON) {
-        const { active ,  inactive } =  responseJSON
-        setTotalActiveProjects(active);
-        setTotalInactiveProjects(inactive);
-      }
-    } catch {  }
-  }, []);
+  //     if (responseJSON) {
+  //       const { active ,  inactive } =  responseJSON
+  //       setTotalActiveProjects(active);
+  //       setTotalInactiveProjects(inactive);
+  //     }
+  //   } catch {  }
+  // }, []);
 
+const TimelogPost = async (project_time , project_id)=>{
+  const obj =  {
+    user_id : "3",
+    time_in : `2022-06-14 ${formatTime(project_time)}`,
+    project_id : project_id
+  }
+  let res;
+  try {
+    res = await axiosInstance.post(`${process.env.REACT_APP_API_BASE_URL}/timelog`,obj)
+    return  setTimeLogData(res.data?.id)
+  }
+  catch(err){
+   console.log(err)
+  }
+
+} 
+
+const TimeLogPut = async (project_time , project_id , id)=>{
+  const obj =  {
+    user_id : "3",
+    time_in : `2022-06-14 ${formatTime(project_time)}`,
+    project_id : project_id,
+    id : timeLogData
+  }
+  let res;
+  try {
+    res = await axiosInstance.put(`${process.env.REACT_APP_API_BASE_URL}/timelog`,obj)
+    return console.log(res?.data);
+  }
+  catch(err){
+   console.log(err)
+  }
+
+} 
 
  
 
@@ -114,11 +152,11 @@ const CurrentProject = () => {
 
   function formatTime(timer) {
     const getSeconds = `0${timer % 60}`.slice(-2);
-    const minutes = `${Math.floor(timer / 60)}`;
+    const minutes = `0${Math.floor(timer / 60)}`;
     const getMinutes = `0${minutes % 60}`.slice(-2);
     const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
 
-    return `${getHours} : ${getMinutes} : ${getSeconds}`;
+    return `${getHours}:${getMinutes}:${getSeconds}`;
   }
 
   const TimeLog = (timer) => {
@@ -127,12 +165,15 @@ const CurrentProject = () => {
     const getMinutes = `0${minutes % 60}`.slice(-2);
     const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
 
-    return `${getHours} : ${getMinutes} `;
+    return `${getHours}:${getMinutes}`;
   };
 
   
-  const handleStart = (projectId) => {
+  const handleStart = (projectId , projectName , index ) => {
     setIsActive(projectId);
+    setProjectName(projectName);
+    setCurrentTImer(0);
+    
     clearInterval(interval);
     window.ProjectRunning.send("paused", { someData: "Hello" })
     window.ProjectRunning.send("project-started", { someData: "Hello" });
@@ -145,7 +186,8 @@ const CurrentProject = () => {
         project[0].time += 1
         let currentCount = project[0].time
         setTimer(timer => timer + 1);
-        setCurrentProject(string => string = formatTime(currentCount));
+        setCurrentTImer(state => state+= 1)
+        setCurrentProject(string => string = TimeLog(currentCount));
       }
         , 1000
       )
@@ -156,8 +198,13 @@ const CurrentProject = () => {
     }
   };
 
+
+
   const handlePause = (ProjectId) => {
-    
+    setCurrentTImer(0);
+    document.title="Thriveva"
+    setProjectName("Select a project")
+    clearInterval(interval)
     let project = projects.filter((item, i) => item.id === ProjectId);
     if (project) {
       setIsPaused(false);
@@ -169,9 +216,6 @@ const CurrentProject = () => {
       return null;
     }
   };
-
-
-
   return (
     <Box sx={{ height: "fit-content" }}>
       <Grid
@@ -200,10 +244,10 @@ const CurrentProject = () => {
             />
             <Box sx={{ border: "1px solid #F2F3F7" }} />
             <Typography variant="h4" sx={{ marginTop: "32px" }}>
-              Current project
+              {projectName}
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
-              <Box>{currentProject}</Box>
+              <Box>{formatTime(currentTimer)}</Box>
             </Typography>
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
@@ -212,7 +256,7 @@ const CurrentProject = () => {
               variant="body6"
               sx={{ marginTop: "10px", marginBottom: "32px" }}
             >
-              Total today: {TimeLog(timer)}
+              Total today: {currentProject}
             </Typography>
             <div className={classes.loginContent}>
               <List sx={style} component="nav" aria-label="mailbox folders">
@@ -227,10 +271,8 @@ const CurrentProject = () => {
 
                 {projects?.map((project, index) => {
                   return (
-                    <>
+                    <div key={project.id} >
                       <ListItem
-                        key={project.id}
-
                         button
                         className={classes.ListItem}
                         sx={{
@@ -263,13 +305,20 @@ const CurrentProject = () => {
                           )} */}
                           {isActive !== project.id ? (
                             <Box onClick={() => {
-                              handleStart(project.id, index);
+                              TimelogPost(project.time , project.id)
+                              handleStart(project.id, project.name ,  index);
+                              document.title=`${project.name}-Thriveva`
+                              
 
                             }}>
                               {<StartIcon />}
                             </Box>
                           ) : (
-                            <Box onClick={() => handlePause(project.id)}>
+                            <Box onClick={() =>{ 
+                              TimeLogPut(project.time, project.id)
+                              handlePause(project.id)}
+                              
+                              }>
                               {<PauseIcon />}
                             </Box>
                           )}
@@ -286,12 +335,12 @@ const CurrentProject = () => {
                           />
                         </Box>
                         <ListItemText
-                          primary={formatTime(project.time)}
+                          primary={TimeLog(project.time)}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>
                       <Divider light />
-                    </>
+                    </div>
                   );
                 })}
               </List>
@@ -313,3 +362,4 @@ export default CurrentProject;
 //   "password": "3L3m0n_masterkey##",
 //   "application_type": "web"
 // }
+

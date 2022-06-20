@@ -12,6 +12,7 @@ import Box from "@mui/material/Box";
 import axiosInstance from "../../../utils/axios-instance";
 import Signin from "../signin/Signin";
 import { useNavigate } from "react-router-dom";
+import Button from '@mui/material/Button';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -45,10 +46,20 @@ const ForgotPassword = () => {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
+  const [success , setSuccess] = useState(false);
+  const [isOpen , setIsOpen ] = useState(false);
+
 
   const handleLogin = async (event) => {
+    
     event.preventDefault();
+    if(emailAddress===""){
+      setErrorMessage("Please fill a valid Email")
+  
+    }
+    else{
     setErrorMessage("");
+  
     const response = await axiosInstance.request({
       method: "POST",
       url: `${process.env.REACT_APP_API_BASE_URL}/accounts/forgot_password`,
@@ -57,14 +68,19 @@ const ForgotPassword = () => {
       },
     });
     if (response.data.success === true) {
-      navigate("/confirmation");
+      // navigate("/confirmation");
+      navigate("/",{state:{
+        isSuccess: true
+      }})
+      setIsOpen(true)
+      setSuccess(true)
     } else {
       setErrorMessage(response.data.err_msg);
       setEmailAddress("");
       if (textRef.current) {
         textRef.current.focus();
       }
-    }
+    }}
   };
 
   return (
@@ -98,7 +114,6 @@ const ForgotPassword = () => {
                 className={classes.formContent}
                 noValidate
                 onSubmit={handleLogin}
-                autoComplete={() => {}}
               >
                 <FormControl
                   variant="standard"
@@ -130,12 +145,12 @@ const ForgotPassword = () => {
                       flex: 1,
                     }}
                   >
-                    <Typography style={{ color: "red" }}>
+                    <Typography style={ success? {color: "green"} : { color: "red" }}>
                       {errorMessage}
                     </Typography>
                   </div>
                 )}
-                <div style={{ display: "flex", justifyContent: "center" }}>
+                {/* <div style={{ display: "flex", justifyContent: "center" }}>
                   <CustomButton
                     text="Send instructions"
                     width="237px"
@@ -146,8 +161,13 @@ const ForgotPassword = () => {
                     padding="12px 40px"
                     onClick={handleLogin}
                   />
-                </div>
+                </div> */}
               </form>
+              <div>
+          <Button variant="outlined" onClick={handleLogin} >
+            Send Reset Link
+          </Button>
+    </div>
             </div>
           </Paper>
         </Grid>

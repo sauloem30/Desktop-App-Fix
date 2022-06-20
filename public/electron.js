@@ -1,19 +1,20 @@
-console.log("this will render second");
 const path = require("path");
 const fs = require("fs");
-
+var CaptureSSinterval = '';
 const {
   app,
   BrowserWindow,
   BrowserView,
   ipcMain,
   desktopCapturer,
+  webContents,
+  mainWindow,
   ipcRenderer,
   remote,
   contextBridge
 } = require("electron");
 const isDev = require("electron-is-dev");
-
+const { uIOhook, UiohookKey } = require("uiohook-napi");
 let win = null;
 function createWindow() {
   // Create the browser window.
@@ -28,6 +29,8 @@ function createWindow() {
     },
   });
 
+
+
   // and load the index.html of the app.
   // win.loadFile("index.html");
   win.loadURL(
@@ -39,7 +42,7 @@ function createWindow() {
   // Open the DevTools.
   if (isDev) {
     win.webContents.openDevTools({ mode: "detach" });
-  } 
+  }
 }
 
 // This method will be called when Electron has finished
@@ -66,50 +69,86 @@ app.on("activate", () => {
 
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
+ipcMain.on("button-clicked", (event, data) => console.log(data));
+ipcMain.on("paused", (event, data) => {
 
-const captureSS = () => {
+  clearInterval(CaptureSSinterval)
+
+});
+ipcMain.on("project-started", () => {
+  CaptureSSinterval = setInterval(
+    () => {
+      captureFunction()
+
+    }
+    , 30000
+  )
+})
 
 
+let keyPressCount = 0
+
+uIOhook.on('keydown', (e) => {
+  keyPressCount += 1
+
+})
+
+uIOhook.start()
+
+
+
+
+
+
+captureFunction = () => {
   let imageName = Date.now()
+  desktopCapturer
+    .getSources({
+      types: ["screen"],
+      thumbnailSize: { width: 1920, height: 1080 },
+    })
+    .then((sources) => {
+      let image = sources[0];
+      /**
+       * for now we are saving screenshots in images folder, will add the APIs.
+       */
+      fs.writeFile(
+        path.resolve(__dirname, `./images/screenshot-${imageName}.png`),
+        image.thumbnail.toPNG(),
+        () => {
+          //*******************NEW window to display screenshot , might be helpful in future */
+          const windowCap = new BrowserWindow({
+            maximizable: false,
+            width: 300,
+            height: 300,
+            modal: true,
+            x: 20,
+            y: 20,
+            autoHideMenuBar: true,
+            frame: false,
+          });
 
-  setInterval(() => {
-    desktopCapturer
-      .getSources({
-        types: ["screen"],
-        thumbnailSize: { width: 1920, height: 1080 },
-      })
-      .then((sources) => {
-        let image = sources[0];
-        /**
-         * for now we are saving screenshots in images folder, will add the APIs.
-         */
-        fs.writeFile(
-          path.resolve(__dirname, `./images/screenshot-${imageName}.png`),
-          image.thumbnail.toPNG(),
-          () => {
-            //*******************NEW window to display screenshot , might be helpful in future */
-            const windowCap = new BrowserWindow({
-              maximizable: false,
-              width: 300,
-              height: 300,
-              modal: true,
-              x: 20,
-              y: 20,
-              autoHideMenuBar: true,
-              frame: false,
+
+          windowCap.loadURL(`file://${path.join(__dirname, `/images/screenshot-${imageName}.png`)}`);
+          // windowCap.loadURL(`file://${path.join(__dirname, '/sample.html')}`);
+
+
+
+          // window.loadURL('')
+          setTimeout(() => {
+            windowCap.close();
+            fs.unlink(`./images/screenshot-${imageName}.png`, function (err) {
+              if (err) return console.log(err);
+              console.log("file deleted successfully");
             });
-            windowCap.loadURL(`file://${path.join(__dirname, `/images/screenshot-${imageName}.png`)}`);
-            // window.loadURL('')
-            setTimeout(() => {
-              windowCap.close();
-              fs.unlink("./images/screenshot.png", function (err) {
-                if (err) return console.log(err);
-                console.log("file deleted successfully");
-              });
-            }, 5000);
-            console.log("Image Added Successfully");
-          }
-        );
-      });
-  }, 3000);
+          }, 5000);
+          console.log("Image Added Successfully");
+        }
+      );
+    });
 }
+
+
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
+

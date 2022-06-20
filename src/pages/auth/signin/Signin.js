@@ -12,9 +12,12 @@ import { makeStyles, useTheme } from "@mui/styles";
 import logo from "../../../assests/images/app-logo.png";
 import CustomButton from "../../../components/common/Button";
 import Box from "@mui/material/Box";
-import { Link } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import axiosInstance from "../../../utils/axios-instance";
-import { useNavigate } from "react-router-dom";
+import LoadingButton from '@mui/lab/LoadingButton';
+import Alert from '@mui/material/Alert';
+import Snackbar from '@mui/material/Snackbar';
+
 
 
 
@@ -43,10 +46,10 @@ const useStyles = makeStyles((theme) => ({
     },
     width: "100%",
   },
-  
+
 }));
 
-const Signin = () => {
+const Signin = (props) => {
   const classes = useStyles();
   const textRef = useRef(null);
   let navigate = useNavigate();
@@ -56,10 +59,14 @@ const Signin = () => {
   const [user, setUser] = useState({});
   const [isRemember, setIsRemember] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isSuccessToast, setIsSuccessToast] = React.useState(false)
+  const location = useLocation();
 
   const handleLogin = async (event) => {
     event.preventDefault();
     setErrorMessage("");
+    setIsLoading(true);
     const response = await axiosInstance.request({
       method: "POST",
       url: `${process.env.REACT_APP_API_BASE_URL}/login/authenticate`,
@@ -70,7 +77,8 @@ const Signin = () => {
       },
     });
     if (response.data.success === true) {
-      navigate("/currentproject");
+      setIsLoading(false)
+      navigate("/timetracker");
     } else {
       setErrorMessage(response.data.err_msg);
       setEmailAddress("");
@@ -80,33 +88,43 @@ const Signin = () => {
       }
     }
   };
+
   const handleChange = (event) => {
     setIsRemember(event.target.checked);
   };
 
   useEffect(() => {
+    setIsSuccessToast(location?.state?.isSuccess)
+  }, [location?.state?.isSuccess])
+
+  // location?.state?.isSuccess && setIsOpen(true);
+  useEffect(() => {
     const checkSession = async () => {
       const responseJSON = await axiosInstance.request({
         method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}login/check_session`,
+        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_sessio`,
       });
       const isLoggedIn = responseJSON.data.success;
-      console.log(isLoggedIn, "isLoggedInisLoggedIn");
       setUser((val) => {
         return { ...val, isLoggedIn };
       });
       if (isLoggedIn) {
-        navigate("/currentproject");
-        
+        navigate("/timetracker");
+
       }
     };
     checkSession();
-  }, [setUser]);  
+  }, [setUser]);
+
+  const handleToast = () =>{
+    setIsSuccessToast(false)
+    window.history.replaceState({}, document.title)
+  }
 
   return (
     <Box>
       <Grid
-        container
+
         sx={{
           display: "flex",
           justifyContent: "center",
@@ -119,14 +137,23 @@ const Signin = () => {
             className={classes.loginContainer}
             style={{ boxShadow: "none" }}
           >
+            <Snackbar open={isSuccessToast}
+              anchorOrigin={{ vertical:'top', horizontal:'center' }}
+              onClose={handleToast} autoHideDuration={4000} >
+              <Alert severity="success" color="info" sx={{ width: '100%' }}>
+                Password Reset instructions sent to your email
+                account.
+              </Alert>
+            </Snackbar>
+
             <img
               src={logo}
-              style={{ maxHeight: 30 , marginTop: '20px'}}
+              style={{ maxHeight: 30, marginTop: '20px' }}
               alt="logo"
             />
             <Typography
               variant="h2"
-              sx={{ marginTop: "20px", fontSize: '30px' ,   marginBottom: "-20px" }}
+              sx={{ marginTop: "20px", fontSize: '30px', marginBottom: "-20px" }}
             >
               Sign in to {`${AppConfig.product_name}`}
             </Typography>
@@ -144,7 +171,7 @@ const Signin = () => {
                   <InputLabel shrink htmlFor="bootstrap-input">
                     <Typography variant="body2">Email</Typography>
                   </InputLabel>
-                  <CustomFieldInput 
+                  <CustomFieldInput
                     inputRef={(el) => {
                       textRef.current = el;
                     }}
@@ -204,35 +231,47 @@ const Signin = () => {
                           <Checkbox
                             onChange={handleChange}
                             checked={isRemember}
-                            
+
                           />
                         }
                         label="Remember me"
                       />
                     </Typography>
                   </div>
-                  <Typography sx={{ paddingTop: "1px" }} variant="body1">
-                    <Link to="/forgotpassword" style={{color: 'black' , textDecoration: 'none' , fontSize:'12px'  }} >Forgot Password?</Link>
+                  <Typography sx={{ paddingTop: "10px" }} variant="body1">
+                    <Link to="/forgotpassword" style={{ color: 'black', textDecoration: 'none', fontSize: '14px' }} >Forgot Password?</Link>
                   </Typography>
                 </Box>
-                <div style={{ display: "flex", justifyContent: "center"  , marginTop:'-20px'}}>
+                <div style={{ display: "flex", justifyContent: "center", marginTop: '-20px' }}>
                   <CustomButton
                     text="Cancel"
                     color="#000000"
                     bgColor="#E8E6F8"
                     borderRadius="4px"
                     width="120px"
-                    onClick={() => {}}
+                    onClick={() => { }}
                     marginRight="32px"
                   />
-                  <CustomButton
+                  {/* <CustomButton
                     text="Sign In"
                     color="#FFFFFF"
                     bgColor="#8E78E1"
                     borderRadius="4px"
                     width="120px"
                     onClick={handleLogin}
-                  />
+                  /> */}
+                  <LoadingButton
+                    color="secondary"
+                    style={{ backgroundColor: "#8E78E1", width: "120px" }}
+                    onClick={handleLogin}
+                    // loading={loading}
+                    loading={isLoading}
+                    loadingPosition="center"
+                    // startIcon={<SaveIcon />}
+                    variant="contained"
+                  >
+                    Sign In
+                  </LoadingButton>
                 </div>
               </form>
             </div>
@@ -244,3 +283,7 @@ const Signin = () => {
 };
 
 export default Signin;
+
+
+
+// 
