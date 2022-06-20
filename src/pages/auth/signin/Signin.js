@@ -102,7 +102,7 @@ const Signin = (props) => {
     const checkSession = async () => {
       const responseJSON = await axiosInstance.request({
         method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_sessio`,
+        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
       });
       const isLoggedIn = responseJSON.data.success;
       setUser((val) => {
