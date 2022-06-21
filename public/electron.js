@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
-var CaptureSSinterval = '';
+var CaptureSSinterval = "";
+var CaptureTimeout = "";
 const {
   app,
   BrowserWindow,
@@ -61,23 +62,32 @@ app.on("activate", () => {
   }
 });
 
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 ipcMain.on("button-clicked", (event, data) => console.log(data));
 ipcMain.on("paused", (event, data) => {
 
-  clearInterval(CaptureSSinterval)
+  clearInterval(CaptureSSinterval);
+  clearTimeout(CaptureTimeout);
 
 });
+
+
 ipcMain.on("project-started", () => {
+  CaptureTimeout = setTimeout( () => captureFunction() , getRandomInt(30000, 19000))
   CaptureSSinterval = setInterval(
     () => {
-      captureFunction()
-
+      CaptureTimeout =  setTimeout(() => {
+        captureFunction()
+      }, getRandomInt(30000, 200000))
     }
-    , 30000
+    , 200000
   )
-})
+});
 
 let keyPressCount = 0
 
@@ -101,7 +111,7 @@ captureFunction = () => {
         path.resolve(__dirname, `./images/screenshot-${imageName}.png`),
         image.thumbnail.toPNG(),
         () => {
-         const windowCap = new BrowserWindow({
+          const windowCap = new BrowserWindow({
             maximizable: false,
             width: 300,
             height: 300,
