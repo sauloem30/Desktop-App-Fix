@@ -53,8 +53,8 @@ const Signin = (props) => {
   const classes = useStyles();
   const textRef = useRef(null);
   let navigate = useNavigate();
-  const [emailAddress, setEmailAddress] = useState("vikas@yopmail.com");
-  const [password, setPassword] = useState("3L3m0n_masterkey##");
+  const [emailAddress, setEmailAddress] = useState("");
+  const [password, setPassword] = useState("");
   const [user, setUser] = useState({});
   const [isRemember, setIsRemember] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -81,6 +81,7 @@ const Signin = (props) => {
     } else {
       setErrorMessage(response.data.err_msg);
       setEmailAddress("");
+      setIsLoading(false)
       setPassword("");
       if (textRef.current) {
         textRef.current.focus();
@@ -100,7 +101,7 @@ const Signin = (props) => {
     const checkSession = async () => {
       const responseJSON = await axiosInstance.request({
         method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_sessio`,
+        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
       });
       const isLoggedIn = responseJSON.data.success;
       setUser((val) => {
@@ -254,7 +255,7 @@ const Signin = (props) => {
            
                   <LoadingButton
                     color="secondary"
-                    style={{ backgroundColor: "#8E78E1", width: "120px" }}
+                    style={{ backgroundColor: "#8E78E1", width: "120px" , color:"white" }}
                     onClick={handleLogin}
                     // loading={loading}
                     loading={isLoading}

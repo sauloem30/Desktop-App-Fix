@@ -52,7 +52,7 @@ var interval;
 const  TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
-  const [isActive, setIsActive] = useState(false);
+  const [activeProjectId, setActiveProjectId] = useState(-1);
   const [isStopRender, setStopRender] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
   const [isTimeLogData, setTimeLogData] = useState(false);
@@ -115,7 +115,7 @@ const  TimeTracker = () => {
     const { id , name, time } =  project;
     handlePostTimeLog(time, id)
     document.title = `${name}-Thriveva`
-    setIsActive(id);
+    setActiveProjectId(id);
     setProjectName(name);
     setCurrentTimer(0);
     clearInterval(interval);
@@ -145,7 +145,7 @@ const  TimeTracker = () => {
     clearInterval(interval)
     let project = projects.filter((item, i) => item.id === ProjectId);
     if (project) {
-      setIsActive(false);
+      setActiveProjectId(false);
       clearInterval(interval)
       window.ProjectRunning.send('paused');
     } else {
@@ -178,8 +178,8 @@ const  TimeTracker = () => {
               }}
               alt="logo"
             />
-            <Box sx={{ border: "1px solid #F2F3F7" }} />
-            <Typography variant="h4" sx={{ marginTop: "32px" }}>
+            <Box sx={{ border: "1px solid #F2F3F7"  }} />
+            <Typography variant="h4" sx={{ marginTop: "32px"  , pointerEvents:"none"}}>
               {projectName}
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
@@ -198,9 +198,10 @@ const  TimeTracker = () => {
               <List sx={style} component="nav" aria-label="mailbox folders">
                 <ListItem
                   button
+                  style={{pointerEvents: "none"}}
                   sx={{ backgroundColor: "#F2F3F7", padding: "17px 24px" }}
                 >
-                  <ListItemText>
+                  <ListItemText >
                     <Typography variant="subheading1">Projects:</Typography>
                   </ListItemText>
                 </ListItem>
@@ -231,7 +232,7 @@ const  TimeTracker = () => {
                             marginLeft: "8px",
                           }}
                         >
-                          {isActive !== project.id ? (
+                          {activeProjectId !== project.id ? (
                             <Box onClick={() => {
                               handleProjectStart(project);
                              

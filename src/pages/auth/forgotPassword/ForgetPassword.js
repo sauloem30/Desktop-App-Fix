@@ -13,6 +13,7 @@ import axiosInstance from "../../../utils/axios-instance";
 import Signin from "../signin/Signin";
 import { useNavigate } from "react-router-dom";
 import Button from '@mui/material/Button';
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -21,6 +22,20 @@ const useStyles = makeStyles((theme) => ({
     overflow: "hidden",
     width: "900px",
   },
+  backButton : 
+    {
+      cursor:"pointer",
+      position: "fixed",
+      top: "8px ",
+      left: "8px",
+      borderRadius: "20px",
+      width: "35px",
+      height:"35px",
+      fontSize:"14px",
+      display:"flex",
+      color:"#8E78E1",
+      alignItems:"center"
+    },
   loginContainer: {
     padding: "40px 20px",
     textAlign: "center",
@@ -31,7 +46,7 @@ const useStyles = makeStyles((theme) => ({
     },
   },
   formContent: {
-    marginTop: 10,
+    marginTop: -10,
     "& > *": {
       marginBottom: 10,
     },
@@ -46,49 +61,51 @@ const ForgotPassword = () => {
 
   const [errorMessage, setErrorMessage] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
-  const [success , setSuccess] = useState(false);
-  const [isOpen , setIsOpen ] = useState(false);
+  const [success, setSuccess] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
 
-  function validateEmail(email) 
-  {
-      var re = /\S+@\S+\.\S+/;
-      return re.test(email);
+  function validateEmail(email) {
+    var re = /\S+@\S+\.\S+/;
+    return re.test(email);
   }
-  
+
   const handleLogin = async (event) => {
     const validEmail = validateEmail(emailAddress);
     console.log(validEmail);
     event.preventDefault();
-    if(!validEmail){
+    if (!validEmail) {
       setErrorMessage("Please fill a valid Email");
 
-  
+
     }
-    else{
-    setErrorMessage("");
-  
-    const response = await axiosInstance.request({
-      method: "POST",
-      url: `${process.env.REACT_APP_API_BASE_URL}/accounts/forgot_password`,
-      data: {
-        email_address: emailAddress,
-      },
-    });
-    if (response.data.success === true) {
-      // navigate("/confirmation");
-      navigate("/",{state:{
-        isSuccess: true
-      }})
-      setIsOpen(true)
-      setSuccess(true)
-    } else {
-      setErrorMessage(response.data.err_msg);
-      setEmailAddress("");
-      if (textRef.current) {
-        textRef.current.focus();
+    else {
+      setErrorMessage("");
+
+      const response = await axiosInstance.request({
+        method: "POST",
+        url: `${process.env.REACT_APP_API_BASE_URL}/accounts/forgot_password`,
+        data: {
+          email_address: emailAddress,
+        },
+      });
+      if (response.data.success === true) {
+        // navigate("/confirmation");
+        navigate("/", {
+          state: {
+            isSuccess: true
+          }
+        })
+        setIsOpen(true)
+        setSuccess(true)
+      } else {
+        setErrorMessage(response.data.err_msg);
+        setEmailAddress("");
+        if (textRef.current) {
+          textRef.current.focus();
+        }
       }
-    }}
+    }
   };
 
   return (
@@ -108,14 +125,14 @@ const ForgotPassword = () => {
           >
             <img
               src={logo}
-              style={{ maxHeight: 30, width: "203px" }}
+              style={{ maxHeight: 30}}
               alt="logo"
             />
             <Typography
               sx={{ marginTop: "30px", marginBottom: "38px" }}
               variant="h3"
             >
-              Forgot your password?
+              Reset Password           
             </Typography>
             <div className={classes.loginContent}>
               <form
@@ -142,7 +159,7 @@ const ForgotPassword = () => {
                     value={emailAddress}
                     onChange={(event) => setEmailAddress(event.target.value)}
                     id="email"
-                    // placeholder="nat@thriveva.com"
+                  // placeholder="nat@thriveva.com"
                   />
                 </FormControl>
                 {errorMessage && (
@@ -153,21 +170,25 @@ const ForgotPassword = () => {
                       flex: 1,
                     }}
                   >
-                    <Typography style={ success? {color: "green"} : { color: "red" }}>
+                    <Typography style={success ? { color: "green" } : { color: "red" }}>
                       {errorMessage}
                     </Typography>
                   </div>
                 )}
               </form>
               <div>
-          <Button variant="outlined" onClick={handleLogin} >
-            Send Reset Link
-          </Button>
-    </div>
+                <Button style={{ backgroundColor: "#8E78E1", color: "white" }} variant="outlined" onClick={handleLogin} >
+                  Send Reset Link
+                </Button>
+              </div>
             </div>
           </Paper>
         </Grid>
       </Grid>
+      <Box className={classes.backButton} onClick={()=>navigate(-1)} >
+        <ArrowBackIosNewIcon htmlColor="#8E78E1" />
+        Back
+      </Box>
     </Box>
   );
 };
