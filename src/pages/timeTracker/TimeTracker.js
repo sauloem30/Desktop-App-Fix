@@ -53,9 +53,9 @@ const  TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
   const [isActive, setIsActive] = useState(false);
-  const [stopRender, setStopRender] = useState(false);
+  const [isStopRender, setStopRender] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
-  const [timeLogData, setTimeLogData] = useState(false);
+  const [isTimeLogData, setTimeLogData] = useState(false);
   const [projectName, setProjectName] = useState('Select a project');
   const [currentTimer, setCurrentTimer] = useState(0);
 
@@ -76,7 +76,7 @@ const  TimeTracker = () => {
       });
   }, []);
 
-  const TimelogPost = async (project_time, project_id) => {
+  const handlePostTimeLog = async (project_time, project_id) => {
     const obj = {
       user_id: "3",
       time_in: `2022-06-14 ${getTime(project_time)}`,
@@ -92,12 +92,14 @@ const  TimeTracker = () => {
     }
   }
 
-  const TimeLogPut = async (project_time, project_id, id) => {
+  const handleUpdateTimeLog = async (project) => {
+    const { id , time } = project;
+    handlePause(id);
     const obj = {
       user_id: "3",
-      time_in: `2022-06-14 ${getTime(project_time)}`,
-      project_id: project_id,
-      id: timeLogData
+      time_in: `2022-06-14 ${getTime(time)}`,
+      project_id: id,
+      id: isTimeLogData
     }
     try {
       await axiosInstance.put(`${process.env.REACT_APP_API_BASE_URL}/timelog`, obj)
@@ -109,24 +111,24 @@ const  TimeTracker = () => {
   }
 
 
-  const handleStart = (projectId, projectName, index) => {
-    setIsActive(projectId);
-    setProjectName(projectName);
+  const handleProjectStart = (project) => {
+    const { id , name, time } =  project;
+    handlePostTimeLog(time, id)
+    document.title = `${name}-Thriveva`
+    setIsActive(id);
+    setProjectName(name);
     setCurrentTimer(0);
     clearInterval(interval);
-
-// Sending Messages to electron.js
     window.ProjectRunning.send("paused", { someData: "Hello" })
     window.ProjectRunning.send("project-started", { someData: "Hello" });
-
-    setStopRender(!stopRender)
-    let project = projects.filter((item, i) => item.id === projectId);
-    if (project) {
+    setStopRender(!isStopRender)
+    let filteredProject = projects.filter((item, i) => item.id === id);
+    if (filteredProject) {
 
       interval = setInterval(() => {
         setTotalToday(state => state += 1)
         setCurrentTimer(state => state += 1);
-        project[0].time += 1
+        filteredProject[0].time += 1
       }
         , 1000
       )
@@ -231,16 +233,14 @@ const  TimeTracker = () => {
                         >
                           {isActive !== project.id ? (
                             <Box onClick={() => {
-                              TimelogPost(project.time, project.id)
-                              handleStart(project.id, project.name, index);
-                              document.title = `${project.name}-Thriveva`
+                              handleProjectStart(project);
+                             
                             }}>
                               {<StartIcon />}
                             </Box>
                           ) : (
                             <Box onClick={() => {
-                              TimeLogPut(project.time, project.id)
-                              handlePause(project.id)
+                              handleUpdateTimeLog(project)
                             }
 
                             }>
