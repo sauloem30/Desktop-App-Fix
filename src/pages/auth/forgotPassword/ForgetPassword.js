@@ -50,11 +50,19 @@ const ForgotPassword = () => {
   const [isOpen , setIsOpen ] = useState(false);
 
 
+  function validateEmail(email) 
+  {
+      var re = /\S+@\S+\.\S+/;
+      return re.test(email);
+  }
+  
   const handleLogin = async (event) => {
-    
+    const validEmail = validateEmail(emailAddress);
+    console.log(validEmail);
     event.preventDefault();
-    if(emailAddress===""){
-      setErrorMessage("Please fill a valid Email")
+    if(!validEmail){
+      setErrorMessage("Please fill a valid Email");
+
   
     }
     else{
@@ -165,3 +173,4 @@ const ForgotPassword = () => {
 };
 
 export default ForgotPassword;
+
