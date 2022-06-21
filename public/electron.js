@@ -4,14 +4,8 @@ var CaptureSSinterval = '';
 const {
   app,
   BrowserWindow,
-  BrowserView,
   ipcMain,
   desktopCapturer,
-  webContents,
-  mainWindow,
-  ipcRenderer,
-  remote,
-  contextBridge
 } = require("electron");
 const isDev = require("electron-is-dev");
 const { uIOhook, UiohookKey } = require("uiohook-napi");
@@ -85,7 +79,6 @@ ipcMain.on("project-started", () => {
   )
 })
 
-
 let keyPressCount = 0
 
 uIOhook.on('keydown', (e) => {
@@ -94,11 +87,6 @@ uIOhook.on('keydown', (e) => {
 })
 
 uIOhook.start()
-
-
-
-
-
 
 captureFunction = () => {
   let imageName = Date.now()
@@ -109,15 +97,11 @@ captureFunction = () => {
     })
     .then((sources) => {
       let image = sources[0];
-      /**
-       * for now we are saving screenshots in images folder, will add the APIs.
-       */
       fs.writeFile(
         path.resolve(__dirname, `./images/screenshot-${imageName}.png`),
         image.thumbnail.toPNG(),
         () => {
-          //*******************NEW window to display screenshot , might be helpful in future */
-          const windowCap = new BrowserWindow({
+         const windowCap = new BrowserWindow({
             maximizable: false,
             width: 300,
             height: 300,
@@ -127,14 +111,7 @@ captureFunction = () => {
             autoHideMenuBar: true,
             frame: false,
           });
-
-
           windowCap.loadURL(`file://${path.join(__dirname, `/images/screenshot-${imageName}.png`)}`);
-          // windowCap.loadURL(`file://${path.join(__dirname, '/sample.html')}`);
-
-
-
-          // window.loadURL('')
           setTimeout(() => {
             windowCap.close();
             fs.unlink(`./images/screenshot-${imageName}.png`, function (err) {

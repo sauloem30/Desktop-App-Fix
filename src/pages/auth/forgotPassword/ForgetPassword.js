@@ -150,18 +150,6 @@ const ForgotPassword = () => {
                     </Typography>
                   </div>
                 )}
-                {/* <div style={{ display: "flex", justifyContent: "center" }}>
-                  <CustomButton
-                    text="Send instructions"
-                    width="237px"
-                    height="48px"
-                    color="#FFFFFF"
-                    bgColor="#8E78E1"
-                    borderRadius="4px"
-                    padding="12px 40px"
-                    onClick={handleLogin}
-                  />
-                </div> */}
               </form>
               <div>
           <Button variant="outlined" onClick={handleLogin} >

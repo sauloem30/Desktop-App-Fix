@@ -53,7 +53,6 @@ const Signin = (props) => {
   const classes = useStyles();
   const textRef = useRef(null);
   let navigate = useNavigate();
-
   const [emailAddress, setEmailAddress] = useState("vikas@yopmail.com");
   const [password, setPassword] = useState("3L3m0n_masterkey##");
   const [user, setUser] = useState({});
@@ -97,7 +96,6 @@ const Signin = (props) => {
     setIsSuccessToast(location?.state?.isSuccess)
   }, [location?.state?.isSuccess])
 
-  // location?.state?.isSuccess && setIsOpen(true);
   useEffect(() => {
     const checkSession = async () => {
       const responseJSON = await axiosInstance.request({
@@ -116,7 +114,7 @@ const Signin = (props) => {
     checkSession();
   }, [setUser]);
 
-  const handleToast = () =>{
+  const handleToast = () => {
     setIsSuccessToast(false)
     window.history.replaceState({}, document.title)
   }
@@ -138,7 +136,7 @@ const Signin = (props) => {
             style={{ boxShadow: "none" }}
           >
             <Snackbar open={isSuccessToast}
-              anchorOrigin={{ vertical:'top', horizontal:'center' }}
+              anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
               onClose={handleToast} autoHideDuration={4000} >
               <Alert severity="success" color="info" sx={{ width: '100%' }}>
                 Password Reset instructions sent to your email
@@ -243,6 +241,7 @@ const Signin = (props) => {
                   </Typography>
                 </Box>
                 <div style={{ display: "flex", justifyContent: "center", marginTop: '-20px' }}>
+
                   <CustomButton
                     text="Cancel"
                     color="#000000"
@@ -252,14 +251,7 @@ const Signin = (props) => {
                     onClick={() => { }}
                     marginRight="32px"
                   />
-                  {/* <CustomButton
-                    text="Sign In"
-                    color="#FFFFFF"
-                    bgColor="#8E78E1"
-                    borderRadius="4px"
-                    width="120px"
-                    onClick={handleLogin}
-                  /> */}
+           
                   <LoadingButton
                     color="secondary"
                     style={{ backgroundColor: "#8E78E1", width: "120px" }}
@@ -283,7 +275,3 @@ const Signin = (props) => {
 };
 
 export default Signin;
-
-
-
-// 

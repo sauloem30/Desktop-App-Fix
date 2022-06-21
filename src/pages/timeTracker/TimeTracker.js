@@ -1,12 +1,8 @@
-import React, {
-  useState,
-  useCallback,
-  useEffect,
-} from "react";
+import React, { useState, useEffect } from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import { makeStyles} from "@mui/styles";
+import { makeStyles } from "@mui/styles";
 import logo from "../../assests/images/app-logo.png";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
@@ -15,8 +11,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
 import axiosInstance from "../../utils/axios-instance";
-
-
+import { getTime, getTimeLog } from "../../utils/index";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -24,12 +19,10 @@ const useStyles = makeStyles((theme) => ({
     height: "100vh",
     overflow: "hidden",
   },
-
   loginContainer: {
     padding: "0px 0px",
     textAlign: "center",
   },
-
   ListItem: {
     display: "flex",
     justifyContent: "space-between",
@@ -54,36 +47,24 @@ const style = {
   bgcolor: "background.paper",
 };
 
-// const itemList = [
-//   { name: "First project name", time: "12:42", icon: "" },
-//   { name: "Second project name", time: "5:42", icon: "" },
-//   { name: "Third project name", time: "10:42", icon: "start" },
-//   { name: "Active project name", time: "15:24", icon: "pause" },
-// ];
+
 var interval;
-const CurrentProject = () => {
+const  TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
-  const initialState = 0;
-  const [timer, setTimer] = React.useState(initialState);
-  const [isActive, setIsActive] = React.useState(false);
-  const [isPaused, setIsPaused] = React.useState(false);
-  const [stopRender, setStopRender] = React.useState(false);
-  const [currentProject, setCurrentProject] = React.useState('00:00');
-  const [timeLogData , setTimeLogData ] = React.useState(false);
-  const [projectName , setProjectName] = React.useState('Select a project');
-  const [currentTimer , setCurrentTImer ] = React.useState(0);
-
-
-  const [totalActiveProjects, setTotalActiveProjects] = useState(0);
-  const [totalInactiveProjects, setTotalInactiveProjects] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [stopRender, setStopRender] = useState(false);
+  const [totalToday, setTotalToday] = useState(0);
+  const [timeLogData, setTimeLogData] = useState(false);
+  const [projectName, setProjectName] = useState('Select a project');
+  const [currentTimer, setCurrentTimer] = useState(0);
 
   useEffect(() => {
     axiosInstance
       .request({
         method: "GET",
         url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
-        
+
       })
       .then((res) => {
         const { data } = res;
@@ -95,121 +76,74 @@ const CurrentProject = () => {
       });
   }, []);
 
-  
-  // const loadProjectActiveCounts = useCallback(async () => {
-  //   try {
-  //     const responseJSON = await axiosInstance.request({
-  //       method: "GET",
-  //       url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
-  //     });
-
-  //     if (responseJSON) {
-  //       const { active ,  inactive } =  responseJSON
-  //       setTotalActiveProjects(active);
-  //       setTotalInactiveProjects(inactive);
-  //     }
-  //   } catch {  }
-  // }, []);
-
-const TimelogPost = async (project_time , project_id)=>{
-  const obj =  {
-    user_id : "3",
-    time_in : `2022-06-14 ${formatTime(project_time)}`,
-    project_id : project_id
-  }
-  let res;
-  try {
-    res = await axiosInstance.post(`${process.env.REACT_APP_API_BASE_URL}/timelog`,obj)
-    return  setTimeLogData(res.data?.id)
-  }
-  catch(err){
-   console.log(err)
+  const TimelogPost = async (project_time, project_id) => {
+    const obj = {
+      user_id: "3",
+      time_in: `2022-06-14 ${getTime(project_time)}`,
+      project_id: project_id
+    }
+    let res;
+    try {
+      res = await axiosInstance.post(`${process.env.REACT_APP_API_BASE_URL}/timelog`, obj)
+      return setTimeLogData(res.data?.id)
+    }
+    catch (err) {
+      console.log(err)
+    }
   }
 
-} 
+  const TimeLogPut = async (project_time, project_id, id) => {
+    const obj = {
+      user_id: "3",
+      time_in: `2022-06-14 ${getTime(project_time)}`,
+      project_id: project_id,
+      id: timeLogData
+    }
+    try {
+      await axiosInstance.put(`${process.env.REACT_APP_API_BASE_URL}/timelog`, obj)
+    }
+    catch (err) {
+      console.log(err)
+    }
 
-const TimeLogPut = async (project_time , project_id , id)=>{
-  const obj =  {
-    user_id : "3",
-    time_in : `2022-06-14 ${formatTime(project_time)}`,
-    project_id : project_id,
-    id : timeLogData
-  }
-  let res;
-  try {
-    res = await axiosInstance.put(`${process.env.REACT_APP_API_BASE_URL}/timelog`,obj)
-    return console.log(res?.data);
-  }
-  catch(err){
-   console.log(err)
   }
 
-} 
 
- 
-
-
-
-  function formatTime(timer) {
-    const getSeconds = `0${timer % 60}`.slice(-2);
-    const minutes = `0${Math.floor(timer / 60)}`;
-    const getMinutes = `0${minutes % 60}`.slice(-2);
-    const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
-
-    return `${getHours}:${getMinutes}:${getSeconds}`;
-  }
-
-  const TimeLog = (timer) => {
-    const getSeconds = `0${timer % 60}`.slice(-2);
-    const minutes = `${Math.floor(timer / 60)}`;
-    const getMinutes = `0${minutes % 60}`.slice(-2);
-    const getHours = `0${Math.floor(timer / 3600)}`.slice(-2);
-
-    return `${getHours}:${getMinutes}`;
-  };
-
-  
-  const handleStart = (projectId , projectName , index ) => {
+  const handleStart = (projectId, projectName, index) => {
     setIsActive(projectId);
     setProjectName(projectName);
-    setCurrentTImer(0);
-    
+    setCurrentTimer(0);
     clearInterval(interval);
+
+// Sending Messages to electron.js
     window.ProjectRunning.send("paused", { someData: "Hello" })
     window.ProjectRunning.send("project-started", { someData: "Hello" });
+
     setStopRender(!stopRender)
     let project = projects.filter((item, i) => item.id === projectId);
     if (project) {
-      setIsPaused(true);
-      interval = setInterval(() => {
 
+      interval = setInterval(() => {
+        setTotalToday(state => state += 1)
+        setCurrentTimer(state => state += 1);
         project[0].time += 1
-        let currentCount = project[0].time
-        setTimer(timer => timer + 1);
-        setCurrentTImer(state => state+= 1)
-        setCurrentProject(string => string = TimeLog(currentCount));
       }
         , 1000
       )
 
     } else {
-      handlePause(projectId);
       return null;
     }
   };
 
-
-
   const handlePause = (ProjectId) => {
-    setCurrentTImer(0);
-    document.title="Thriveva"
+    setCurrentTimer(0);
+    document.title = "Thriveva"
     setProjectName("Select a project")
     clearInterval(interval)
     let project = projects.filter((item, i) => item.id === ProjectId);
     if (project) {
-      setIsPaused(false);
       setIsActive(false);
-      // setTimer(timer);  
       clearInterval(interval)
       window.ProjectRunning.send('paused');
     } else {
@@ -247,7 +181,7 @@ const TimeLogPut = async (project_time , project_id , id)=>{
               {projectName}
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
-              <Box>{formatTime(currentTimer)}</Box>
+              <Box>{getTime(currentTimer)}</Box>
             </Typography>
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
@@ -256,7 +190,7 @@ const TimeLogPut = async (project_time , project_id , id)=>{
               variant="body6"
               sx={{ marginTop: "10px", marginBottom: "32px" }}
             >
-              Total today: {currentProject}
+              Total today: {getTime(totalToday).slice(0, 5)}
             </Typography>
             <div className={classes.loginContent}>
               <List sx={style} component="nav" aria-label="mailbox folders">
@@ -287,7 +221,6 @@ const TimeLogPut = async (project_time , project_id , id)=>{
                           // },
                         }}
                       >
-
                         <Box
                           sx={{
                             display: "flex",
@@ -296,29 +229,21 @@ const TimeLogPut = async (project_time , project_id , id)=>{
                             marginLeft: "8px",
                           }}
                         >
-                          {/* {project.icon === "start" ? (
-                            <StartIcon />
-                          ) : project.icon === "pause" ? (
-                            <PauseIcon />
-                          ) : (
-                            ""
-                          )} */}
                           {isActive !== project.id ? (
                             <Box onClick={() => {
-                              TimelogPost(project.time , project.id)
-                              handleStart(project.id, project.name ,  index);
-                              document.title=`${project.name}-Thriveva`
-                              
-
+                              TimelogPost(project.time, project.id)
+                              handleStart(project.id, project.name, index);
+                              document.title = `${project.name}-Thriveva`
                             }}>
                               {<StartIcon />}
                             </Box>
                           ) : (
-                            <Box onClick={() =>{ 
+                            <Box onClick={() => {
                               TimeLogPut(project.time, project.id)
-                              handlePause(project.id)}
-                              
-                              }>
+                              handlePause(project.id)
+                            }
+
+                            }>
                               {<PauseIcon />}
                             </Box>
                           )}
@@ -335,7 +260,7 @@ const TimeLogPut = async (project_time , project_id , id)=>{
                           />
                         </Box>
                         <ListItemText
-                          primary={TimeLog(project.time)}
+                          primary={getTimeLog(project.time)}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>
@@ -352,14 +277,4 @@ const TimeLogPut = async (project_time , project_id , id)=>{
   );
 };
 
-export default CurrentProject;
-
-
-
-
-// {
-//   "email_address": "vikas@yopmail.com",
-//   "password": "3L3m0n_masterkey##",
-//   "application_type": "web"
-// }
-
+export default TimeTracker;
