@@ -11,7 +11,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
 import axiosInstance from "../../utils/axios-instance";
-import { getTime, getTimeLog } from "../../utils/index";
+import { getHourMin, getHourMinSec } from "../../utils/index";
 
 const useStyles = makeStyles((theme) => ({
   root: {
@@ -79,7 +79,7 @@ const  TimeTracker = () => {
   const handlePostTimeLog = async (project_time, project_id) => {
     const obj = {
       user_id: "3",
-      time_in: `2022-06-14 ${getTime(project_time)}`,
+      time_in: `2022-06-14 ${getHourMin(project_time)}`,
       project_id: project_id
     }
     let res;
@@ -97,7 +97,7 @@ const  TimeTracker = () => {
     handlePause(id);
     const obj = {
       user_id: "3",
-      time_in: `2022-06-14 ${getTime(time)}`,
+      time_in: `2022-06-14 ${getHourMin(time)}`,
       project_id: id,
       id: isTimeLogData
     }
@@ -183,7 +183,7 @@ const  TimeTracker = () => {
               {projectName}
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
-              <Box>{getTime(currentTimer)}</Box>
+              <Box>{getHourMinSec(currentTimer)}</Box>
             </Typography>
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
@@ -192,7 +192,7 @@ const  TimeTracker = () => {
               variant="body6"
               sx={{ marginTop: "10px", marginBottom: "32px" }}
             >
-              Total today: {getTime(totalToday).slice(0, 5)}
+              Total today: {getHourMin(totalToday).slice(0, 5)}
             </Typography>
             <div className={classes.loginContent}>
               <List sx={style} component="nav" aria-label="mailbox folders">
@@ -260,7 +260,7 @@ const  TimeTracker = () => {
                           />
                         </Box>
                         <ListItemText
-                          primary={getTimeLog(project.time)}
+                          primary={getHourMin(project.time)}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>

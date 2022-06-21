@@ -7,10 +7,10 @@ const Minutes = (time) => {
 
 const Seconds = (time) => `0${time % 60}`.slice(-2);
 
-export const getTime = (time) => {
+export const getHourMinSec = (time) => {
     return `${Hours(time)}:${Minutes(time)}:${Seconds(time)}`;
 }
 
-export const  getTimeLog = (time) =>{
-    return `${Minutes(time)}:${Seconds(time)}`
+export const  getHourMin= (time) =>{
+    return `${Hours(time)}:${Minutes(time)}`
 }
