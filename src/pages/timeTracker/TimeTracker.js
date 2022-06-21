@@ -53,9 +53,9 @@ const  TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
   const [isActive, setIsActive] = useState(false);
-  const [stopRender, setStopRender] = useState(false);
+  const [isStopRender, setStopRender] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
-  const [timeLogData, setTimeLogData] = useState(false);
+  const [isTimeLogData, setTimeLogData] = useState(false);
   const [projectName, setProjectName] = useState('Select a project');
   const [currentTimer, setCurrentTimer] = useState(0);
 
@@ -97,7 +97,7 @@ const  TimeTracker = () => {
       user_id: "3",
       time_in: `2022-06-14 ${getTime(project_time)}`,
       project_id: project_id,
-      id: timeLogData
+      id: isTimeLogData
     }
     try {
       await axiosInstance.put(`${process.env.REACT_APP_API_BASE_URL}/timelog`, obj)
@@ -119,7 +119,7 @@ const  TimeTracker = () => {
     window.ProjectRunning.send("paused", { someData: "Hello" })
     window.ProjectRunning.send("project-started", { someData: "Hello" });
 
-    setStopRender(!stopRender)
+    setStopRender(!isStopRender)
     let project = projects.filter((item, i) => item.id === projectId);
     if (project) {
 
