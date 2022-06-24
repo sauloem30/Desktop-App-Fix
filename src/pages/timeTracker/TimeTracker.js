@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import Grid from "@mui/material/Grid";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
-import { makeStyles } from "@mui/styles";
 import logo from "../../assests/images/app-logo.png";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
@@ -10,117 +9,46 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
 import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
-import axiosInstance from "../../utils/axios-instance";
 import { getHourMin, getHourMinSec } from "../../utils/index";
-
-const useStyles = makeStyles((theme) => ({
-  root: {
-    backgroundColor: theme.palette.white,
-    height: "100vh",
-    overflow: "hidden",
-  },
-  loginContainer: {
-    padding: "0px 0px",
-    textAlign: "center",
-  },
-  ListItem: {
-    display: "flex",
-    justifyContent: "space-between",
-  },
-  loginContent: {
-    [theme.breakpoints.down("sm")]: {
-      padding: "24px 0px 0px 0px",
-    },
-  },
-  formContent: {
-    marginTop: 10,
-    "& > *": {
-      marginBottom: 10,
-    },
-    width: "100%",
-  },
-}));
-
-const style = {
-  width: "100%",
-  maxWidth: 360,
-  bgcolor: "background.paper",
-};
-
+import { handleUpdateTimeLog, getProjects, handlePostTimeLog } from "../../api";
+import { useStyles } from "./useStyles";
+import axiosInstance from "../../utils/axios-instance";
+import moment from "moment";
 
 var interval;
-const  TimeTracker = () => {
+const TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(-1);
   const [isStopRender, setStopRender] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
-  const [isTimeLogData, setTimeLogData] = useState(false);
   const [projectName, setProjectName] = useState('Select a project');
   const [currentTimer, setCurrentTimer] = useState(0);
+  const [noEvents , setNoEvents ] = useState(0);
+  const [returnId , setReturnId ] = useState('');
+  const [currentProjectTimer, setCurrentProjectTimer] = useState(0);
 
   useEffect(() => {
-    axiosInstance
-      .request({
-        method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
+    getProjects().then(res => {
+      if (res) {
+        setProjects(res);
+      }
+    }).catch(err => {
+      console.log(err);
+    })
 
-      })
-      .then((res) => {
-        const { data } = res;
-        let arr = data?.result?.map((val) => {
-          return { ...val, time: 0 }
-        }) || []
-
-        setProjects(arr || []);
-      });
   }, []);
 
-  const handlePostTimeLog = async (project_time, project_id) => {
-    const obj = {
-      user_id: "3",
-      time_in: `2022-06-14 ${getHourMin(project_time)}`,
-      project_id: project_id
-    }
-    let res;
-    try {
-      res = await axiosInstance.post(`${process.env.REACT_APP_API_BASE_URL}/timelog`, obj)
-      return setTimeLogData(res.data?.id)
-    }
-    catch (err) {
-      console.log(err)
-    }
-  }
-
-  const handleUpdateTimeLog = async (project) => {
-    const { id , time } = project;
-    handlePause(id);
-    const obj = {
-      user_id: "3",
-      time_in: `2022-06-14 ${getHourMin(time)}`,
-      project_id: id,
-      id: isTimeLogData
-    }
-    try {
-      await axiosInstance.put(`${process.env.REACT_APP_API_BASE_URL}/timelog`, obj)
-    }
-    catch (err) {
-      console.log(err)
-    }
-
-  }
-
-
   const handleProjectStart = (project) => {
-    const { id , name, time } =  project;
+    const { id, name, time } = project;
     handlePostTimeLog(time, id)
     document.title = `${name}-Thriveva`
     setActiveProjectId(id);
     setProjectName(name);
     setCurrentTimer(0);
     clearInterval(interval);
-    window.ProjectRunning.send("paused", { someData: "Hello" })
-    window.ProjectRunning.send("project-started", { someData: "Hello" });
+    window.electronApi.send("paused", { someData: "Hello" })
+    window.electronApi.send("project-started", { someData: "Hello" });
     setStopRender(!isStopRender)
     let filteredProject = projects.filter((item, i) => item.id === id);
     if (filteredProject) {
@@ -129,6 +57,8 @@ const  TimeTracker = () => {
         setTotalToday(state => state += 1)
         setCurrentTimer(state => state += 1);
         filteredProject[0].time += 1
+        setCurrentProjectTimer(filteredProject[0].time);
+
       }
         , 1000
       )
@@ -138,20 +68,105 @@ const  TimeTracker = () => {
     }
   };
 
-  const handlePause = (ProjectId) => {
-    setCurrentTimer(0);
+  const handlePause = (projectId) => {
+    setCurrentTimer(0)
     document.title = "Thriveva"
     setProjectName("Select a project")
     clearInterval(interval)
-    let project = projects.filter((item, i) => item.id === ProjectId);
+    let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
+      handleUpdateTimeLog(...project)
       clearInterval(interval)
-      window.ProjectRunning.send('paused');
+      window.electronApi.send('paused');
     } else {
       return null;
     }
   };
+
+  let image = JSON.parse(localStorage.getItem('screenshot'));
+
+  // console.log(image,"imageimageimageimage")
+  useEffect(
+    () => {
+      let data = []
+      if(noEvents < 6){
+      if ( activeProjectId>=0 && JSON.parse(localStorage.getItem('screenshot'))) {
+        data = JSON.parse(localStorage.getItem('screenshot'));
+        let newArr = data.map(val => {
+         if(val.keypressCount===0 && val.mouseClicks===0){
+            setNoEvents(state=> state+1)
+         } else{
+          setNoEvents(0)
+         }
+          if (val.loggedTime) {
+            return { ...val }
+          } else {
+            return {
+              ...val,
+              generated_at : moment(val.generated_at).format(),
+              loggedTime: currentProjectTimer,
+              project_id: activeProjectId
+      
+            }
+          }
+        })
+        postSsData(newArr);
+       }
+    }else{
+      console.log("i am here")
+       handlePause(activeProjectId);
+    }
+      
+    }, [localStorage.getItem('screenshot')]
+  )
+
+
+  const postSsData =  (newArr) => {
+
+
+    let failedSs = []
+    let onComplete = []
+    if(newArr && newArr.length){
+      let failSsToSend =  []
+     if( JSON.parse(localStorage.getItem('failedSS'))){
+      failSsToSend =  JSON.parse(localStorage.getItem('failedSS'))
+     }
+      let arrayToFetch = [ ...failSsToSend, ...newArr ]
+      arrayToFetch.map(async item => {
+          let res =  {}
+        if(item.screenshot2){
+          try {
+            res = await axiosInstance.put('/screenshots/upload', item, returnId)
+            setReturnId(res?.data?.return_id)
+            onComplete.push(res)
+          }
+          catch (err) {
+            console.log(err);
+            onComplete.push(err)
+            failedSs.push(item);
+          }
+        }else{
+          try {
+            res = await axiosInstance.post('/screenshots/upload', item)
+            setReturnId(res?.data?.return_id)
+            onComplete.push(res)
+          }
+          catch (err) {
+            console.log(err);
+            onComplete.push(err)
+            failedSs.push(item);
+          }
+          if(newArr.length === onComplete.length){
+            localStorage.setItem('screenshot' , JSON.stringify([]));
+            localStorage.setItem('failedSS' , JSON.stringify(failedSs));
+          }
+        }
+
+      })
+    }
+  }
+
   return (
     <Box sx={{ height: "fit-content" }}>
       <Grid
@@ -178,8 +193,8 @@ const  TimeTracker = () => {
               }}
               alt="logo"
             />
-            <Box sx={{ border: "1px solid #F2F3F7"  }} />
-            <Typography variant="h4" sx={{ marginTop: "32px"  , pointerEvents:"none"}}>
+            <Box sx={{ border: "1px solid #F2F3F7" }} />
+            <Typography variant="h4" sx={{ marginTop: "32px", pointerEvents: "none" }}>
               {projectName}
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
@@ -195,10 +210,10 @@ const  TimeTracker = () => {
               Total today: {getHourMin(totalToday).slice(0, 5)}
             </Typography>
             <div className={classes.loginContent}>
-              <List sx={style} component="nav" aria-label="mailbox folders">
+              <List className={classes.style} component="nav" aria-label="mailbox folders">
                 <ListItem
                   button
-                  style={{pointerEvents: "none"}}
+                  style={{ pointerEvents: "none" }}
                   sx={{ backgroundColor: "#F2F3F7", padding: "17px 24px" }}
                 >
                   <ListItemText >
@@ -224,6 +239,7 @@ const  TimeTracker = () => {
                           // },
                         }}
                       >
+
                         <Box
                           sx={{
                             display: "flex",
@@ -235,13 +251,13 @@ const  TimeTracker = () => {
                           {activeProjectId !== project.id ? (
                             <Box onClick={() => {
                               handleProjectStart(project);
-                             
+
                             }}>
                               {<StartIcon />}
                             </Box>
                           ) : (
                             <Box onClick={() => {
-                              handleUpdateTimeLog(project)
+                              handlePause(project.id)
                             }
 
                             }>

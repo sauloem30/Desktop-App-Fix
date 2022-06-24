@@ -103,6 +103,7 @@ const Signin = (props) => {
         method: "GET",
         url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
       });
+      console.log(responseJSON);
       const isLoggedIn = responseJSON.data.success;
       setUser((val) => {
         return { ...val, isLoggedIn };
