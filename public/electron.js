@@ -1,7 +1,12 @@
 const path = require("path");
 const fs = require("fs");
+const fsExtra = require('fs-extra')
+const Storage = require('electron-store');
+const store = new Storage
 var CaptureSSinterval = "";
 var CaptureTimeout = "";
+var keypressCount = 0;
+var mouseClicks = 0
 const {
   app,
   BrowserWindow,
@@ -9,7 +14,7 @@ const {
   desktopCapturer,
 } = require("electron");
 const isDev = require("electron-is-dev");
-const { uIOhook, UiohookKey } = require("uiohook-napi");
+const { uIOhook } = require("uiohook-napi");
 let win = null;
 function createWindow() {
   // Create the browser window.
@@ -68,8 +73,10 @@ function getRandomInt(min, max) {
 }
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
-ipcMain.on("button-clicked", (event, data) => console.log(data));
-ipcMain.on("paused", (event, data) => {
+ipcMain.on("paused", async (event, data) => {
+  keypressCount = 0;
+  mouseClicks = 0;
+  uIOhook.stop()
 
   clearInterval(CaptureSSinterval);
   clearTimeout(CaptureTimeout);
@@ -77,61 +84,90 @@ ipcMain.on("paused", (event, data) => {
 });
 
 
-ipcMain.on("project-started", () => {
-  CaptureTimeout = setTimeout( () => captureFunction() , getRandomInt(30000, 19000))
+ipcMain.on("project-started", async (event, data) => {
+  uIOhook.start()
+  // CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000))
   CaptureSSinterval = setInterval(
     () => {
-      CaptureTimeout =  setTimeout(() => {
+      CaptureTimeout = setTimeout(() => {
         captureFunction()
-      }, getRandomInt(30000, 200000))
+      }, getRandomInt(6000, 8000))
     }
-    , 200000
+    , 9000
   )
 });
 
-let keyPressCount = 0
 
-uIOhook.on('keydown', (e) => {
-  keyPressCount += 1
-
+uIOhook.on('mousedown', (e) => {
+  mouseClicks += 1
 })
 
-uIOhook.start()
+
+
+uIOhook.on('keydown', (e) => {
+  keypressCount += 1
+})
+
 
 captureFunction = () => {
-  let imageName = Date.now()
+  let generated_at = Date.now();
+  let captureImg;
+  let captureImg2;
   desktopCapturer
     .getSources({
-      types: ["screen"],
+      types: ["screen" ],
       thumbnailSize: { width: 1920, height: 1080 },
     })
     .then((sources) => {
-      let image = sources[0];
-      fs.writeFile(
-        path.resolve(__dirname, `./images/screenshot-${imageName}.png`),
-        image.thumbnail.toPNG(),
-        () => {
-          const windowCap = new BrowserWindow({
-            maximizable: false,
-            width: 300,
-            height: 300,
-            modal: true,
-            x: 20,
-            y: 20,
-            autoHideMenuBar: true,
-            frame: false,
-          });
-          windowCap.loadURL(`file://${path.join(__dirname, `/images/screenshot-${imageName}.png`)}`);
-          setTimeout(() => {
-            windowCap.close();
-            fs.unlink(`./images/screenshot-${imageName}.png`, function (err) {
-              if (err) return console.log(err);
-              console.log("file deleted successfully");
-            });
-          }, 5000);
-          console.log("Image Added Successfully");
+      sources.forEach(async (source, index) => {
+        if(source.name=='Screen 1' || source.name == 'Entire Screen'){
+          captureImg = source.thumbnail.toPNG();
+          // let image = captureImg.thumbnail.toDataURL()
+        //   // Sending captureImg to preload.js
+        //   if(source.name == "Screen 2"){
+
+        //   // win.webContents.send('asynchronous-message', { image, keypressCount, mouseClicks , generated_at});
+        //   keypressCount = 0
+        //   mouseClicks = 0
+        // }
+        // else {
+        //   // win.webContents.send('asynchronous-message' , {image , keypressCount , mouseClicks , generated_at , SecondSs: true})
+        // }
         }
-      );
+       else if(source.name == 'Screen 2'){
+          captureImg2 = source.thumbnail.toPNG();
+          
+        }
+        
+       setTimeout(()=> { fs.writeFile(
+            path.resolve(__dirname, `./images/${source.name == "Entire Screen" ? "screenshot-1.png" : source.name == "Screen 1" ?  "screenshot-1.png" :  "screenshot-2.png" }`),
+            source.name=="Entire Screen"  ? captureImg : source.name == "Screen 1" ?  captureImg :  captureImg2,
+            () => {
+              const windowCap = new BrowserWindow({
+                maximizable: false,
+                width: 300,
+                height: 200,
+                modal: true,
+                x: 20,
+                y: 20,
+                autoHideMenuBar: true,
+                frame: false,
+              });
+              if(source.name == "Entire Screen"){
+                windowCap.loadURL(`file://${path.join(__dirname, `/screenshot.html`)}`);
+
+              }
+               else if(source.name == "Screen 1" || source.name == "Screen 2"){
+                windowCap.loadURL(`file://${path.join(__dirname, `/multiscreenshots.html`)}`);
+
+              }
+              setTimeout(() => {
+                windowCap.close();
+                fsExtra.removeSync(`${__dirname}/images/${source.name=="Entire Screen"? 'screenshot-1.png' : source.name == "Screen 1" ?  "screenshot-1.png" :  "screenshot-2.png"}`)
+              }, 5000);
+            }
+          )}, 0);
+      })
     });
 }
 

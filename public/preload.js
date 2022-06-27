@@ -1,7 +1,24 @@
-const { contextBridge, ipcRenderer } = require('electron')
-
-contextBridge.exposeInMainWorld('ProjectRunning',
+const { contextBridge, ipcRenderer } = require('electron');
+contextBridge.exposeInMainWorld('electronApi',
     {
-        send: (channel, payload) => ipcRenderer.send(channel, payload)
+        send: (channel, payload) => ipcRenderer.send(channel, payload),
     }
 )
+
+// localStorage.setItem('screenshot' , JSON.stringify([]));
+
+ipcRenderer.on('asynchronous-message', (evt, data) => {
+    let localdata = []
+    console.log(data,"ssssssss");
+
+    document.getElementById('screenshot').src = data.image;
+
+
+    if (JSON.parse(localStorage.getItem('screenshot'))) {
+        localdata = JSON.parse(localStorage.getItem('screenshot'))
+    }
+    localdata.push(data)
+    localStorage.setItem("screenshot", JSON.stringify(localdata));
+})
+
+

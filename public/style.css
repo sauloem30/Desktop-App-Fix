@@ -1,0 +1,33 @@
+*{
+    padding: 0;
+    font-family: 'Nunito', sans-serif;
+}
+
+.screenshots
+{
+    /* background-color: black; */
+    padding: 4px;
+    border: 1px solid #8E78E1;
+    display: flex;
+    justify-content: center;
+    border-radius: 8px;
+}
+.multiwindowss
+{
+    width:45vw;
+}
+
+body
+{
+    transition: 250ms ease ;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+#screenshot {
+    border: 1px solid grey;
+    border-radius: 8px;
+    padding: 4px;    
+}
