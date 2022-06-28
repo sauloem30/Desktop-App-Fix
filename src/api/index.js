@@ -31,7 +31,7 @@ export const handleUpdateTimeLog = async (project , activeId) => {
     id : activeId,
   }
   try {
-    const res = await axiosInstance.post(`/timelog/time_out`, obj);
+    await axiosInstance.post(`/timelog/time_out`, obj);
   }
   catch (err) {
     console.log(err)

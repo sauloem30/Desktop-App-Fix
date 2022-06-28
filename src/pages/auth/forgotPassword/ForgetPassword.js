@@ -5,12 +5,10 @@ import Typography from "@mui/material/Typography";
 import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import CustomFieldInput from "../../../components/CustomField";
-import { makeStyles, useTheme } from "@mui/styles";
+import { makeStyles} from "@mui/styles";
 import logo from "../../../assests/images/app-logo.png";
-import CustomButton from "../../../components/common/Button";
 import Box from "@mui/material/Box";
 import axiosInstance from "../../../utils/axios-instance";
-import Signin from "../signin/Signin";
 import { useNavigate } from "react-router-dom";
 import Button from '@mui/material/Button';
 import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
@@ -62,7 +60,6 @@ const ForgotPassword = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [emailAddress, setEmailAddress] = useState("");
   const [success, setSuccess] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
 
 
   function validateEmail(email) {
@@ -95,7 +92,6 @@ const ForgotPassword = () => {
             isSuccess: true
           }
         })
-        setIsOpen(true)
         setSuccess(true)
       } else {
         setErrorMessage(response.data.err_msg);

@@ -2,11 +2,13 @@
   "name": "thriveva-desktop-app",
   "version": "0.1.0",
   "main": "public/electron.js",
+  "description": "time tracker app",
   "proxy": "http://localhost:4301",
   "private": true,
   "dependencies": {
     "@babel/core": "^7.18.2",
     "@babel/preset-env": "^7.18.2",
+    "@electron/build-tools": "^1.0.4",
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
     "@mui/icons-material": "^5.8.2",
@@ -70,6 +72,7 @@
   "devDependencies": {
     "concurrently": "5.2.0",
     "electron": "^19.0.1",
+    "electron-builder": "^23.1.0",
     "wait-on": "5.1.0"
   }
 }
