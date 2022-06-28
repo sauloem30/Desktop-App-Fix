@@ -72,7 +72,6 @@ const ForgotPassword = () => {
 
   const handleLogin = async (event) => {
     const validEmail = validateEmail(emailAddress);
-    console.log(validEmail);
     event.preventDefault();
     if (!validEmail) {
       setErrorMessage("Please fill a valid Email");

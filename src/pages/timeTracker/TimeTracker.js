@@ -111,7 +111,6 @@ const TimeTracker = () => {
           postSsData(newArr);
         }
       } else {
-        console.log("i am here")
         handlePause(activeProjectId);
       }
 
@@ -136,7 +135,6 @@ const TimeTracker = () => {
           try {
             res = await axiosInstance.put('/screenshots/upload', item, returnId)
             setReturnId(res?.data?.return_id)
-            console.log('returned id', returnId);
             onComplete.push(res)
           }
           catch (err) {
@@ -146,10 +144,8 @@ const TimeTracker = () => {
           }
         } else {
           try {
-            console.log(item);
             res = await axiosInstance.post('/screenshots/upload', item);
             setReturnId(res?.data?.return_id);
-            console.log(res?.data?.return_id);
             onComplete.push(res)
           }
           catch (err) {

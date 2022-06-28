@@ -23,7 +23,6 @@ export const getProjects = async () => {
 export const handleUpdateTimeLog = async (project , activeId) => {
 
   const { id } = project;
-  console.log(activeId , "active id ");
   // handlePause(id);
   const obj = {
     time_out: moment().format("YYYY-MM-DD hh:mm:ss"),
@@ -32,8 +31,7 @@ export const handleUpdateTimeLog = async (project , activeId) => {
     id : activeId,
   }
   try {
-    const res = await axiosInstance.post(`/timelog/time_out`, obj)
-    console.log(res);
+    const res = await axiosInstance.post(`/timelog/time_out`, obj);
   }
   catch (err) {
     console.log(err)
@@ -53,7 +51,6 @@ export const handlePostTimeLog = async (project_time, project_id) => {
   let res;
   try {
     res = await axiosInstance.post(`/timelog/time_in`, obj)
-    console.log(res);
     return res;
   }
   catch (err) {
