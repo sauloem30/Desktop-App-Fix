@@ -5,8 +5,8 @@ const Storage = require('electron-store');
 const store = new Storage
 var CaptureSSinterval = "";
 var CaptureTimeout = "";
-var keypressCount = 0;
-var mouseClicks = 0
+var keyboard_activities_seconds = 0;
+var mouse_activities_seconds = 0
 const {
   app,
   BrowserWindow,
@@ -74,8 +74,8 @@ function getRandomInt(min, max) {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 ipcMain.on("paused", async (event, data) => {
-  keypressCount = 0;
-  mouseClicks = 0;
+  keyboard_activities_seconds = 0;
+  mouse_activities_seconds = 0;
   uIOhook.stop()
 
   clearInterval(CaptureSSinterval);
@@ -86,53 +86,41 @@ ipcMain.on("paused", async (event, data) => {
 
 ipcMain.on("project-started", async (event, data) => {
   uIOhook.start()
-  // CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000))
+  CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000))
   CaptureSSinterval = setInterval(
     () => {
       CaptureTimeout = setTimeout(() => {
         captureFunction()
-      }, getRandomInt(6000, 8000))
+      }, getRandomInt(9000, 90000));
     }
-    , 9000
+    , 200000
   )
 });
 
 
 uIOhook.on('mousedown', (e) => {
-  mouseClicks += 1
+  mouse_activities_seconds += 1
 })
 
 
 
 uIOhook.on('keydown', (e) => {
-  keypressCount += 1
+  keyboard_activities_seconds += 1
 })
 
 
 captureFunction = () => {
-  let generated_at = Date.now();
   let captureImg;
   let captureImg2;
   desktopCapturer
     .getSources({
-      types: ["screen" ],
+      types: ["screen"],
       thumbnailSize: { width: 1920, height: 1080 },
     })
     .then((sources) => {
       sources.forEach(async (source, index) => {
         if(source.name=='Screen 1' || source.name == 'Entire Screen'){
           captureImg = source.thumbnail.toPNG();
-          // let image = captureImg.thumbnail.toDataURL()
-        //   // Sending captureImg to preload.js
-        //   if(source.name == "Screen 2"){
-
-        //   // win.webContents.send('asynchronous-message', { image, keypressCount, mouseClicks , generated_at});
-        //   keypressCount = 0
-        //   mouseClicks = 0
-        // }
-        // else {
-        //   // win.webContents.send('asynchronous-message' , {image , keypressCount , mouseClicks , generated_at , SecondSs: true})
-        // }
         }
        else if(source.name == 'Screen 2'){
           captureImg2 = source.thumbnail.toPNG();
@@ -155,10 +143,17 @@ captureFunction = () => {
               });
               if(source.name == "Entire Screen"){
                 windowCap.loadURL(`file://${path.join(__dirname, `/screenshot.html`)}`);
+                const image = source.thumbnail.toDataURL();
+                win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds, mouse_activities_seconds});
+                keyboard_activities_seconds = 0;
+                mouse_activities_seconds=0;
 
               }
                else if(source.name == "Screen 1" || source.name == "Screen 2"){
                 windowCap.loadURL(`file://${path.join(__dirname, `/multiscreenshots.html`)}`);
+                const image = source.thumbnail.toDataURL();
+                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds, mouse_activities_seconds}):
+                win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds, mouse_activities_seconds , second_screenshot : true});
 
               }
               setTimeout(() => {
@@ -166,7 +161,7 @@ captureFunction = () => {
                 fsExtra.removeSync(`${__dirname}/images/${source.name=="Entire Screen"? 'screenshot-1.png' : source.name == "Screen 1" ?  "screenshot-1.png" :  "screenshot-2.png"}`)
               }, 5000);
             }
-          )}, 0);
+          )}, 20);
       })
     });
 }

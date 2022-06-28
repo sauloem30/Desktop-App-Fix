@@ -9,11 +9,6 @@ contextBridge.exposeInMainWorld('electronApi',
 
 ipcRenderer.on('asynchronous-message', (evt, data) => {
     let localdata = []
-    console.log(data,"ssssssss");
-
-    document.getElementById('screenshot').src = data.image;
-
-
     if (JSON.parse(localStorage.getItem('screenshot'))) {
         localdata = JSON.parse(localStorage.getItem('screenshot'))
     }

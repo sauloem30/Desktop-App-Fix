@@ -24,9 +24,9 @@ const TimeTracker = () => {
   const [totalToday, setTotalToday] = useState(0);
   const [projectName, setProjectName] = useState('Select a project');
   const [currentTimer, setCurrentTimer] = useState(0);
-  const [noEvents , setNoEvents ] = useState(0);
-  const [returnId , setReturnId ] = useState('');
-  const [currentProjectTimer, setCurrentProjectTimer] = useState(0);
+  const [noEvents, setNoEvents] = useState(0);
+  const [returnId, setReturnId] = useState('');
+  const [ActiveTimelogId, setActiveTimelogId] = useState(-1);
 
   useEffect(() => {
     getProjects().then(res => {
@@ -39,16 +39,17 @@ const TimeTracker = () => {
 
   }, []);
 
-  const handleProjectStart = (project) => {
+  const handleProjectStart = async (project) => {
     const { id, name, time } = project;
-    handlePostTimeLog(time, id)
+    const returned_data = await handlePostTimeLog(time, id);
+    setActiveTimelogId(returned_data.data.id);
     document.title = `${name}-Thriveva`
     setActiveProjectId(id);
     setProjectName(name);
     setCurrentTimer(0);
     clearInterval(interval);
-    window.electronApi.send("paused", { someData: "Hello" })
-    window.electronApi.send("project-started", { someData: "Hello" });
+    window.electronApi.send("paused")
+    window.electronApi.send("project-started");
     setStopRender(!isStopRender)
     let filteredProject = projects.filter((item, i) => item.id === id);
     if (filteredProject) {
@@ -57,7 +58,7 @@ const TimeTracker = () => {
         setTotalToday(state => state += 1)
         setCurrentTimer(state => state += 1);
         filteredProject[0].time += 1
-        setCurrentProjectTimer(filteredProject[0].time);
+        setTotalToday(filteredProject[0].time);
 
       }
         , 1000
@@ -76,7 +77,7 @@ const TimeTracker = () => {
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      handleUpdateTimeLog(...project)
+      handleUpdateTimeLog(...project, ActiveTimelogId)
       clearInterval(interval)
       window.electronApi.send('paused');
     } else {
@@ -84,61 +85,58 @@ const TimeTracker = () => {
     }
   };
 
-  let image = JSON.parse(localStorage.getItem('screenshot'));
-
-  // console.log(image,"imageimageimageimage")
   useEffect(
     () => {
       let data = []
-      if(noEvents < 6){
-      if ( activeProjectId>=0 && JSON.parse(localStorage.getItem('screenshot'))) {
-        data = JSON.parse(localStorage.getItem('screenshot'));
-        let newArr = data.map(val => {
-         if(val.keypressCount===0 && val.mouseClicks===0){
-            setNoEvents(state=> state+1)
-         } else{
-          setNoEvents(0)
-         }
-          if (val.loggedTime) {
-            return { ...val }
-          } else {
-            return {
-              ...val,
-              generated_at : moment(val.generated_at).format(),
-              loggedTime: currentProjectTimer,
-              project_id: activeProjectId
-      
+      if (noEvents < 6) {
+        if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
+          data = JSON.parse(localStorage.getItem('screenshot'));
+          let newArr = data.map(val => {
+            if (val.keyboard_activities_seconds === 0 && val.mouse_activities_seconds === 0) {
+              setNoEvents(state => state + 1)
+            } else {
+              setNoEvents(0)
             }
-          }
-        })
-        postSsData(newArr);
-       }
-    }else{
-      console.log("i am here")
-       handlePause(activeProjectId);
-    }
-      
+            if (val.loggedTime) {
+              return { ...val }
+            } else {
+              return {
+                ...val,
+                generated_at: moment(new Date()).format("YYYY-MM-DD hh:mm:ss"),
+                project_id: activeProjectId
+
+              }
+            }
+          })
+          postSsData(newArr);
+        }
+      } else {
+        console.log("i am here")
+        handlePause(activeProjectId);
+      }
+
     }, [localStorage.getItem('screenshot')]
   )
 
 
-  const postSsData =  (newArr) => {
+  const postSsData = (newArr) => {
 
 
     let failedSs = []
     let onComplete = []
-    if(newArr && newArr.length){
-      let failSsToSend =  []
-     if( JSON.parse(localStorage.getItem('failedSS'))){
-      failSsToSend =  JSON.parse(localStorage.getItem('failedSS'))
-     }
-      let arrayToFetch = [ ...failSsToSend, ...newArr ]
+    if (newArr && newArr.length) {
+      let failSsToSend = []
+      if (JSON.parse(localStorage.getItem('failedSS'))) {
+        failSsToSend = JSON.parse(localStorage.getItem('failedSS'))
+      }
+      let arrayToFetch = [...failSsToSend, ...newArr]
       arrayToFetch.map(async item => {
-          let res =  {}
-        if(item.screenshot2){
+        let res = {}
+        if (item.second_screenshot) {
           try {
             res = await axiosInstance.put('/screenshots/upload', item, returnId)
             setReturnId(res?.data?.return_id)
+            console.log('returned id', returnId);
             onComplete.push(res)
           }
           catch (err) {
@@ -146,10 +144,12 @@ const TimeTracker = () => {
             onComplete.push(err)
             failedSs.push(item);
           }
-        }else{
+        } else {
           try {
-            res = await axiosInstance.post('/screenshots/upload', item)
-            setReturnId(res?.data?.return_id)
+            console.log(item);
+            res = await axiosInstance.post('/screenshots/upload', item);
+            setReturnId(res?.data?.return_id);
+            console.log(res?.data?.return_id);
             onComplete.push(res)
           }
           catch (err) {
@@ -157,9 +157,9 @@ const TimeTracker = () => {
             onComplete.push(err)
             failedSs.push(item);
           }
-          if(newArr.length === onComplete.length){
-            localStorage.setItem('screenshot' , JSON.stringify([]));
-            localStorage.setItem('failedSS' , JSON.stringify(failedSs));
+          if (newArr.length === onComplete.length) {
+            localStorage.setItem('screenshot', JSON.stringify([]));
+            localStorage.setItem('failedSS', JSON.stringify(failedSs));
           }
         }
 
