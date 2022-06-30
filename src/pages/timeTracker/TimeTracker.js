@@ -27,20 +27,28 @@ const TimeTracker = () => {
   const [noEvents, setNoEvents] = useState(0);
   const [returnId, setReturnId] = useState('');
   const [ActiveTimelogId, setActiveTimelogId] = useState(-1);
+  const [dailyLimit , setDailyLimit] = useState("No Daily Limit")
+  const [isLimitReached , setIsLimitReached] = useState(false);
 
   useEffect(() => {
+    window.electronApi.send("paused")
     getProjects().then(res => {
       if (res) {
         setProjects(res);
+        let totalTime = 0
+        res.map(project=> totalTime+=parseInt(project.time/60));
+
+        setTotalToday(totalTime*60);
       }
     }).catch(err => {
-      console.log(err);
     })
 
   }, []);
 
   const handleProjectStart = async (project) => {
-    const { id, name, time } = project;
+    const { id, name, time, daily_limit_by_minute } = project;
+    setIsLimitReached(false);
+    setDailyLimit(`Today's Limit ${getHourMin(daily_limit_by_minute*60)}`);
     const returned_data = await handlePostTimeLog(time, id);
     setActiveTimelogId(returned_data.data.id);
     document.title = `${name}-Thriveva`
@@ -57,8 +65,8 @@ const TimeTracker = () => {
       interval = setInterval(() => {
         setTotalToday(state => state += 1)
         setCurrentTimer(state => state += 1);
-        filteredProject[0].time += 1
-        setTotalToday(filteredProject[0].time);
+        filteredProject[0].time+= 1;
+        setTotalToday(state => state++);
 
       }
         , 1000
@@ -71,6 +79,7 @@ const TimeTracker = () => {
 
   const handlePause = (projectId) => {
     setCurrentTimer(0)
+    setDailyLimit("No Daily Limit")
     document.title = "Thriveva"
     setProjectName("Select a project")
     clearInterval(interval)
@@ -92,7 +101,7 @@ const TimeTracker = () => {
         if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
           data = JSON.parse(localStorage.getItem('screenshot'));
           let newArr = data.map(val => {
-            if (val.keyboard_activities_seconds === 0 && val.mouse_activities_seconds === 0) {
+            if (val.keyboard === 0 && val.mouse === 0) {
               setNoEvents(state => state + 1)
             } else {
               setNoEvents(0)
@@ -102,7 +111,7 @@ const TimeTracker = () => {
             } else {
               return {
                 ...val,
-                generated_at: moment(new Date()).format("YYYY-MM-DD hh:mm:ss"),
+                generated_at: moment().utc("YYYY-MM-DD hh:mm:ss"),
                 project_id: activeProjectId
 
               }
@@ -133,12 +142,11 @@ const TimeTracker = () => {
         let res = {}
         if (item.second_screenshot) {
           try {
-            res = await axiosInstance.put('/screenshots/upload', item, returnId)
+            res = await axiosInstance.post('/screenshots/upload', item, returnId)
             setReturnId(res?.data?.return_id)
             onComplete.push(res)
           }
           catch (err) {
-            console.log(err);
             onComplete.push(err)
             failedSs.push(item);
           }
@@ -149,7 +157,6 @@ const TimeTracker = () => {
             onComplete.push(res)
           }
           catch (err) {
-            console.log(err);
             onComplete.push(err)
             failedSs.push(item);
           }
@@ -161,6 +168,12 @@ const TimeTracker = () => {
 
       })
     }
+  }
+
+  const handleLimitReached =()=> {
+      setIsLimitReached(true)
+      setTimeout(()=> setIsLimitReached(false) , 4000 );
+
   }
 
   return (
@@ -197,13 +210,17 @@ const TimeTracker = () => {
               <Box>{getHourMinSec(currentTimer)}</Box>
             </Typography>
             <Typography variant="body5">
-              <Box sx={{ marginBottom: "10px" }}>No daily limit</Box>
+              <Box sx={{ marginBottom: "10px" }}>{dailyLimit}</Box>
             </Typography>
+            
             <Typography
               variant="body6"
               sx={{ marginTop: "10px", marginBottom: "32px" }}
             >
-              Total today: {getHourMin(totalToday).slice(0, 5)}
+              Total today: {getHourMin(totalToday)}
+            </Typography>
+            <Typography variant="body5">
+              <Box style={isLimitReached? {display:'block'}: {display: 'none'}} sx={{ position:'absolute' , left:"50%" ,color:'red', transform: 'translate(-50%)'}}>Project Limit Is Reached</Box>
             </Typography>
             <div className={classes.loginContent}>
               <List className={classes.style} component="nav" aria-label="mailbox folders">
@@ -217,7 +234,8 @@ const TimeTracker = () => {
                   </ListItemText>
                 </ListItem>
 
-                {projects?.map((project, index) => {
+                {projects.length ? projects?.map((project, index) => {
+                  // setTotalToday(state=> state++)
                   return (
                     <div key={project.id} >
                       <ListItem
@@ -246,8 +264,8 @@ const TimeTracker = () => {
                         >
                           {activeProjectId !== project.id ? (
                             <Box onClick={() => {
-                              handleProjectStart(project);
-
+                              project.time/60>=project.daily_limit_by_minute?
+                              handleLimitReached(): handleProjectStart(project);
                             }}>
                               {<StartIcon />}
                             </Box>
@@ -273,14 +291,19 @@ const TimeTracker = () => {
                           />
                         </Box>
                         <ListItemText
-                          primary={getHourMin(project.time)}
+                          primary={getHourMin(parseInt(project.time? project.time: 0))}
                           sx={{ textAlign: "right" }}
                         />
                       </ListItem>
                       <Divider light />
                     </div>
                   );
-                })}
+                }) :  <Box sx={{
+                        marginTop: "35px",
+                      }}>
+                    <Typography variant="subheading3">No active project available!</Typography>
+                  </Box>
+                }
               </List>
             </div>
           </Paper>

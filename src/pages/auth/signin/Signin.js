@@ -66,6 +66,7 @@ const Signin = (props) => {
     event.preventDefault();
     setErrorMessage("");
     setIsLoading(true);
+    setTimeout(()=> setIsLoading(false), 5000);
     const response = await axiosInstance.request({
       method: "POST",
       url: `${process.env.REACT_APP_API_BASE_URL}/login/authenticate`,
@@ -103,7 +104,6 @@ const Signin = (props) => {
         method: "GET",
         url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
       });
-      console.log(responseJSON);
       const isLoggedIn = responseJSON.data.success;
       setUser((val) => {
         return { ...val, isLoggedIn };
@@ -260,7 +260,7 @@ const Signin = (props) => {
                     onClick={handleLogin}
                     // loading={loading}
                     loading={isLoading}
-                    loadingPosition="center"
+                    loadingPosition="end"
                     // startIcon={<SaveIcon />}
                     variant="contained"
                   >

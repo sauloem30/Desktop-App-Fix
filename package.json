@@ -1,9 +1,19 @@
 {
   "name": "thriveva-desktop-app",
+  "author": "ZestGeek",
   "version": "0.1.0",
   "build": {
     "appId": "com.thriveva_timeTracker"
-    },
+  },
+  "mac": {
+    "target": "dmg"
+  },
+  "win": {
+    "target": "nsis"
+  },
+  "linux": {
+    "target": "deb"
+  },
   "main": "public/electron.js",
   "homepage": "./",
   "description": "time tracker app",
@@ -58,6 +68,9 @@
     "build": "yarn react-build && yarn electron-build",
     "release": "yarn react-build && electron-builder --publish=always",
     "test": "react-scripts test",
+    "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=build/electron.js",
+    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
+    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js",
     "eject": "react-scripts eject"
   },
   "eslintConfig": {

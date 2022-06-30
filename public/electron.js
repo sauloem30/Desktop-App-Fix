@@ -5,8 +5,8 @@ const Storage = require('electron-store');
 const store = new Storage
 var CaptureSSinterval = "";
 var CaptureTimeout = "";
-var keyboard_activities_seconds = 0;
-var mouse_activities_seconds = 0
+var keyboard = 0;
+var mouse = 0
 const {
   app,
   BrowserWindow,
@@ -74,8 +74,8 @@ function getRandomInt(min, max) {
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.
 ipcMain.on("paused", async (event, data) => {
-  keyboard_activities_seconds = 0;
-  mouse_activities_seconds = 0;
+  keyboard = 0;
+  mouse = 0;
   uIOhook.stop()
 
   clearInterval(CaptureSSinterval);
@@ -99,13 +99,13 @@ ipcMain.on("project-started", async (event, data) => {
 
 
 uIOhook.on('mousedown', (e) => {
-  mouse_activities_seconds += 1
+  mouse += 1
 })
 
 
 
 uIOhook.on('keydown', (e) => {
-  keyboard_activities_seconds += 1
+  keyboard += 1
 })
 
 
@@ -144,16 +144,16 @@ captureFunction = () => {
               if(source.name == "Entire Screen"){
                 windowCap.loadURL(`file://${path.join(__dirname, `/screenshot.html`)}`);
                 const image = source.thumbnail.toDataURL();
-                win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds, mouse_activities_seconds});
-                keyboard_activities_seconds = 0;
-                mouse_activities_seconds=0;
+                win.webContents.send('asynchronous-message', { image, keyboard, mouse});
+                keyboard = 0;
+                mouse=0;
 
               }
                else if(source.name == "Screen 1" || source.name == "Screen 2"){
                 windowCap.loadURL(`file://${path.join(__dirname, `/multiscreenshots.html`)}`);
                 const image = source.thumbnail.toDataURL();
-                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds, mouse_activities_seconds}):
-                win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds, mouse_activities_seconds , second_screenshot : true});
+                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard, mouse}):
+                win.webContents.send('asynchronous-message', { image, keyboard, mouse , second_screenshot : true});
 
               }
               setTimeout(() => {
