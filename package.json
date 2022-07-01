@@ -3,7 +3,24 @@
   "author": "ZestGeek",
   "version": "0.1.0",
   "build": {
-    "appId": "com.thriveva_timeTracker"
+    "appId": "com.thriveva_timeTracker",
+    "mac": {
+      "icon": "./public/icon.icns",  
+      "category": "public.app-category.utilities"
+    },
+    "win": {
+      "icon": "./public/icons.icns" 
+    },
+    "files": [
+      "./build/**/*",
+      "./dist/**/*",
+      "./node_modules/**/*",
+      "./public/**/*",  
+      "*.js"
+    ],
+    "directories": {
+      "buildResources": "public" 
+    }
   },
   "mac": {
     "target": "dmg"

@@ -3,6 +3,7 @@ import { Routes, Route } from "react-router-dom";
 import Signin from "./pages/auth/signin/Signin";
 import ForgetPassword from "./pages/auth/forgotPassword/ForgetPassword";
 import TimeTracker from "./pages/timeTracker/TimeTracker";
+import './App.css'
 function App() {
   return (
     <>

@@ -26,9 +26,9 @@ const TimeTracker = () => {
   const [currentTimer, setCurrentTimer] = useState(0);
   const [noEvents, setNoEvents] = useState(0);
   const [returnId, setReturnId] = useState('');
-  const [ActiveTimelogId, setActiveTimelogId] = useState(-1);
-  const [dailyLimit , setDailyLimit] = useState("No Daily Limit")
-  const [isLimitReached , setIsLimitReached] = useState(false);
+  const [activeTimelogId, setActiveTimelogId] = useState(-1);
+  const [dailyLimit, setDailyLimit] = useState("No Daily Limit")
+  const [isLimitReached, setIsLimitReached] = useState(false);
 
   useEffect(() => {
     window.electronApi.send("paused")
@@ -36,9 +36,9 @@ const TimeTracker = () => {
       if (res) {
         setProjects(res);
         let totalTime = 0
-        res.map(project=> totalTime+=parseInt(project.time/60));
+        res.map(project => totalTime += parseInt(project.time / 60));
 
-        setTotalToday(totalTime*60);
+        setTotalToday(totalTime * 60);
       }
     }).catch(err => {
     })
@@ -48,7 +48,7 @@ const TimeTracker = () => {
   const handleProjectStart = async (project) => {
     const { id, name, time, daily_limit_by_minute } = project;
     setIsLimitReached(false);
-    setDailyLimit(`Today's Limit ${getHourMin(daily_limit_by_minute*60)}`);
+    setDailyLimit(`Today's Limit ${getHourMin(daily_limit_by_minute * 60)}`);
     const returned_data = await handlePostTimeLog(time, id);
     setActiveTimelogId(returned_data.data.id);
     document.title = `${name}-Thriveva`
@@ -65,7 +65,7 @@ const TimeTracker = () => {
       interval = setInterval(() => {
         setTotalToday(state => state += 1)
         setCurrentTimer(state => state += 1);
-        filteredProject[0].time+= 1;
+        filteredProject[0].time += 1;
         setTotalToday(state => state++);
 
       }
@@ -86,7 +86,7 @@ const TimeTracker = () => {
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      handleUpdateTimeLog(...project, ActiveTimelogId)
+      handleUpdateTimeLog(...project, activeTimelogId)
       clearInterval(interval)
       window.electronApi.send('paused');
     } else {
@@ -122,7 +122,7 @@ const TimeTracker = () => {
       } else {
         handlePause(activeProjectId);
       }
-
+   // eslint-disable-next-line
     }, [localStorage.getItem('screenshot')]
   )
 
@@ -170,9 +170,9 @@ const TimeTracker = () => {
     }
   }
 
-  const handleLimitReached =()=> {
-      setIsLimitReached(true)
-      setTimeout(()=> setIsLimitReached(false) , 4000 );
+  const handleLimitReached = () => {
+    setIsLimitReached(true)
+    setTimeout(() => setIsLimitReached(false), 4000);
 
   }
 
@@ -212,7 +212,7 @@ const TimeTracker = () => {
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>{dailyLimit}</Box>
             </Typography>
-            
+
             <Typography
               variant="body6"
               sx={{ marginTop: "10px", marginBottom: "32px" }}
@@ -220,7 +220,7 @@ const TimeTracker = () => {
               Total today: {getHourMin(totalToday)}
             </Typography>
             <Typography variant="body5">
-              <Box style={isLimitReached? {display:'block'}: {display: 'none'}} sx={{ position:'absolute' , left:"50%" ,color:'red', transform: 'translate(-50%)'}}>Project Limit Is Reached</Box>
+              <Box style={isLimitReached ? { display: 'block' } : { display: 'none' }} sx={{ position: 'absolute', left: "50%", color: 'red', transform: 'translate(-50%)' }}>Project Limit Is Reached</Box>
             </Typography>
             <div className={classes.loginContent}>
               <List className={classes.style} component="nav" aria-label="mailbox folders">
@@ -233,77 +233,79 @@ const TimeTracker = () => {
                     <Typography variant="subheading1">Projects:</Typography>
                   </ListItemText>
                 </ListItem>
-
-                {projects.length ? projects?.map((project, index) => {
-                  // setTotalToday(state=> state++)
-                  return (
-                    <div key={project.id} >
-                      <ListItem
-                        button
-                        className={classes.ListItem}
-                        sx={{
-                          height: 54,
-                          // "&:focus": {
-                          background: project.is_active ? "#E1F7F1" : "inherit",
-                          "&:hover": {
-                            background: project.is_active
-                              ? "#E1F7F1"
-                              : "#F7F9FA",
-                          },
-                          // },
-                        }}
-                      >
-
-                        <Box
+                <div className="active_projects" >
+                  {projects.length? projects.map((project, index) => {
+                    // setTotalToday(state=> state++)
+                    return (
+                      <div key={project.id} >
+                        <ListItem
+                          button
+                          className={classes.ListItem}
                           sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            marginLeft: "8px",
+                            height: 54,
+                            // "&:focus": {
+                            background: project.is_active ? "#E1F7F1" : "inherit",
+                            "&:hover": {
+                              background: project.is_active
+                                ? "#E1F7F1"
+                                : "#F7F9FA",
+                            },
+                            // },
                           }}
                         >
-                          {activeProjectId !== project.id ? (
-                            <Box onClick={() => {
-                              project.time/60>=project.daily_limit_by_minute?
-                              handleLimitReached(): handleProjectStart(project);
-                            }}>
-                              {<StartIcon />}
-                            </Box>
-                          ) : (
-                            <Box onClick={() => {
-                              handlePause(project.id)
-                            }
 
-                            }>
-                              {<PauseIcon />}
-                            </Box>
-                          )}
-
-                          <ListItemText
-                            primary={project.name}
+                          <Box
                             sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
                               marginLeft: "8px",
-                              "& span":
-                                project.name === "start"
-                                  ? { color: "#2A41E7" }
-                                  : { color: "#000000" },
                             }}
+                          >
+                            {activeProjectId !== project.id ? (
+                              <Box onClick={() => {
+                                project.time / 60 >= project.daily_limit_by_minute ?
+                                  handleLimitReached() : handleProjectStart(project);
+                              }}>
+                                {<StartIcon />}
+                              </Box>
+                            ) : (
+                              <Box onClick={() => {
+                                handlePause(project.id)
+                              }
+
+                              }>
+                                {<PauseIcon />}
+                              </Box>
+                            )}
+
+                            <ListItemText
+                              primary={project.name}
+                              sx={{
+                                marginLeft: "8px",
+                                "& span":
+                                  project.name === "start"
+                                    ? { color: "#2A41E7" }
+                                    : { color: "#000000" },
+                              }}
+                            />
+                          </Box>
+                          <ListItemText
+                            primary={project.time ? getHourMin(parseInt(project.time)) : "No Limit"}
+                            sx={{ textAlign: "right" }}
                           />
-                        </Box>
-                        <ListItemText
-                          primary={getHourMin(parseInt(project.time? project.time: 0))}
-                          sx={{ textAlign: "right" }}
-                        />
-                      </ListItem>
-                      <Divider light />
-                    </div>
-                  );
-                }) :  <Box sx={{
-                        marginTop: "35px",
-                      }}>
-                    <Typography variant="subheading3">No active project available!</Typography>
-                  </Box>
+                        </ListItem>
+                        <Divider light />
+                      </div>
+                    );
+                  }
+                ):  <Box sx={{
+                  marginTop: "35px",
+                }}>
+                  <Typography variant="subheading3">No active project available!</Typography>
+                </Box>
                 }
+                </div>
               </List>
             </div>
           </Paper>

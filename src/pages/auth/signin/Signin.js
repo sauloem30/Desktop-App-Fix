@@ -8,7 +8,7 @@ import InputLabel from "@mui/material/InputLabel";
 import CustomFieldInput from "../../../components/CustomField";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import Checkbox from "@mui/material/Checkbox";
-import { makeStyles, useTheme } from "@mui/styles";
+import { makeStyles } from "@mui/styles";
 import logo from "../../../assests/images/app-logo.png";
 import CustomButton from "../../../components/common/Button";
 import Box from "@mui/material/Box";
@@ -55,18 +55,16 @@ const Signin = (props) => {
   let navigate = useNavigate();
   const [emailAddress, setEmailAddress] = useState("");
   const [password, setPassword] = useState("");
-  const [user, setUser] = useState({});
-  const [isRemember, setIsRemember] = useState(true);
+  const [isRemember, setIsRemember] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [isLoading, setIsLoading] = React.useState(false);
   const [isSuccessToast, setIsSuccessToast] = React.useState(false)
   const location = useLocation();
 
   const handleLogin = async (event) => {
+    setIsLoading(true);
     event.preventDefault();
     setErrorMessage("");
-    setIsLoading(true);
-    setTimeout(()=> setIsLoading(false), 5000);
     const response = await axiosInstance.request({
       method: "POST",
       url: `${process.env.REACT_APP_API_BASE_URL}/login/authenticate`,
@@ -75,9 +73,14 @@ const Signin = (props) => {
         email_address: emailAddress,
         password: password,
       },
+    }).catch((error)=>{
+      setErrorMessage('Something Went Wrong');
+      setTimeout(()=>setErrorMessage(""), 5000);
+      setIsLoading(false);
     });
     if (response.data.success === true) {
-      setIsLoading(false)
+    localStorage.setItem('isRemember' , JSON.parse(isRemember));
+    setIsLoading(false);
       navigate("/timetracker");
     } else {
       setErrorMessage(response.data.err_msg);
@@ -89,6 +92,11 @@ const Signin = (props) => {
       }
     }
   };
+  const triggerSignIn = (e) => {
+    if (e.keyCode === 13) {
+      handleLogin()
+    }
+  }
 
   const handleChange = (event) => {
     setIsRemember(event.target.checked);
@@ -100,21 +108,24 @@ const Signin = (props) => {
 
   useEffect(() => {
     const checkSession = async () => {
-      const responseJSON = await axiosInstance.request({
-        method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
-      });
-      const isLoggedIn = responseJSON.data.success;
-      setUser((val) => {
-        return { ...val, isLoggedIn };
-      });
-      if (isLoggedIn) {
-        navigate("/timetracker");
+      const rememberedUser =  JSON.parse(localStorage.getItem('isRemember'));
+      
+      setIsRemember(JSON.parse(localStorage.getItem('isRemember')));
 
+      if (rememberedUser) {
+        const responseJSON = await axiosInstance.request({
+          method: "GET",
+          url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
+        });
+        const isLoggedIn = responseJSON.data.success;
+        if (isLoggedIn) {
+          navigate("/timetracker");
+
+        }
       }
     };
     checkSession();
-  }, [setUser]);
+  }, [navigate]);
 
   const handleToast = () => {
     setIsSuccessToast(false)
@@ -182,6 +193,7 @@ const Signin = (props) => {
                     type="email"
                     value={emailAddress}
                     onChange={(event) => setEmailAddress(event.target.value)}
+                    onKeyDown={triggerSignIn}
                     id="email"
                     placeholder="Enter your email"
                   />
@@ -205,6 +217,7 @@ const Signin = (props) => {
                     type="password"
                     value={password}
                     onChange={(event) => setPassword(event.target.value)}
+                    onKeyDown={triggerSignIn}
                     id="password"
                     placeholder="Enter your password"
                   />
@@ -250,18 +263,17 @@ const Signin = (props) => {
                     bgColor="#E8E6F8"
                     borderRadius="4px"
                     width="120px"
-                    onClick={() => { }}
+                    onClick={() => { window.electronApi.send("quiteApp")}}
                     marginRight="32px"
                   />
-           
+
                   <LoadingButton
                     color="secondary"
-                    style={{ backgroundColor: "#8E78E1", width: "120px" , color:"white" }}
+                    style={{ backgroundColor: "#8E78E1", width: "120px", color: "white" }}
                     onClick={handleLogin}
-                    // loading={loading}
                     loading={isLoading}
                     loadingPosition="end"
-                    // startIcon={<SaveIcon />}
+                    endIcon={" "}
                     variant="contained"
                   >
                     Sign In
