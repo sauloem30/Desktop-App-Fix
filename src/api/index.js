@@ -1,26 +1,18 @@
 import moment from "moment";
 import axiosInstance from "../utils/axios-instance";
+import axios from "axios";
 
 export const getProjects = async () => {
   try {
-    return axiosInstance
-      .request({
-        method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`,
-      })
-      .then((res) => {
-        const { data } = res;
-        let arr = data?.results
-        return arr
-      })
-  } catch (error) {
+    const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`)
+    return response.data
+  } catch (err) {
+    // handle errors here
+    console.log(err)
   }
-
 };
 
-
 export const handleUpdateTimeLog = async (project , activeId) => {
-
   const { id } = project;
   // handlePause(id);
   const obj = {
@@ -33,11 +25,9 @@ export const handleUpdateTimeLog = async (project , activeId) => {
     await axiosInstance.post(`/timelog/time_out`, obj);
   }
   catch (err) {
+    console.log(err)
   }
-
 }
-
-
 
 export const handlePostTimeLog = async (project_time, project_id) => {
     // time_in: moment(new Date()).format("YYYY-MM-DD hh:mm:ss"),
@@ -52,6 +42,8 @@ export const handlePostTimeLog = async (project_time, project_id) => {
     return res;
   }
   catch (err) {
+    console.log(err)
+
     return err;
   }
 }

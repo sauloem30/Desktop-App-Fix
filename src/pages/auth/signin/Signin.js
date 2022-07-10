@@ -18,10 +18,6 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 
-
-
-
-
 const useStyles = makeStyles((theme) => ({
   root: {
     backgroundColor: theme.palette.white,
@@ -30,7 +26,6 @@ const useStyles = makeStyles((theme) => ({
   },
 
   loginContainer: {
-    // height: "100vh",
     padding: "40px 20px",
     textAlign: "center",
   },
@@ -63,7 +58,6 @@ const Signin = (props) => {
 
   const handleLogin = async (event) => {
     setIsLoading(true);
-    event.preventDefault();
     setErrorMessage("");
     const response = await axiosInstance.request({
       method: "POST",
@@ -79,8 +73,8 @@ const Signin = (props) => {
       setIsLoading(false);
     });
     if (response.data.success === true) {
-    localStorage.setItem('isRemember' , JSON.parse(isRemember));
-    setIsLoading(false);
+      localStorage.setItem('isRemember' , JSON.parse(isRemember));
+      setIsLoading(false);
       navigate("/timetracker");
     } else {
       setErrorMessage(response.data.err_msg);
@@ -120,7 +114,6 @@ const Signin = (props) => {
         const isLoggedIn = responseJSON.data.success;
         if (isLoggedIn) {
           navigate("/timetracker");
-
         }
       }
     };
@@ -135,7 +128,6 @@ const Signin = (props) => {
   return (
     <Box>
       <Grid
-
         sx={{
           display: "flex",
           justifyContent: "center",
@@ -156,7 +148,6 @@ const Signin = (props) => {
                 account.
               </Alert>
             </Snackbar>
-
             <img
               src={logo}
               style={{ maxHeight: 30, marginTop: '20px' }}
@@ -244,7 +235,6 @@ const Signin = (props) => {
                           <Checkbox
                             onChange={handleChange}
                             checked={isRemember}
-
                           />
                         }
                         label="Remember me"
@@ -256,7 +246,6 @@ const Signin = (props) => {
                   </Typography>
                 </Box>
                 <div style={{ display: "flex", justifyContent: "center", marginTop: '-20px' }}>
-
                   <CustomButton
                     text="Cancel"
                     color="#000000"

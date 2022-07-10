@@ -34,7 +34,7 @@ const theme = createTheme({
       fontWeight: 700,
       fontSize: 40,
       lineHeight: "150%",
-      fontFamily: "Gilroy-Medium",
+      fontFamily: "Gilroy-Bold",
       color: "#000000",
     },
     h3: {
@@ -45,7 +45,7 @@ const theme = createTheme({
     h4: {
       fontWeight: 700,
       fontSize: 24,
-      fontFamily: "Gilroy-Medium",
+      fontFamily: "Gilroy-Bold",
     },
     h5: {
       fontSize: 20,
@@ -63,7 +63,7 @@ const theme = createTheme({
       fontWeight: 400,
       lineHeight: "20px",
       color: "#000000",
-      fontFamily: "Gilroy-Medium",
+      fontFamily: "Gilroy-Bold",
     },
     subheading1: {
       fontSize: 24,
@@ -96,7 +96,7 @@ const theme = createTheme({
       fontSize: 36,
       fontWeight: 700,
       lineHeight: "150%",
-      fontFamily: "Gilroy-Medium",
+      fontFamily: "Gilroy-Bold",
       color: "#2A41E7",
     },
     body5: {

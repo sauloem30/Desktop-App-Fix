@@ -14,13 +14,14 @@ import { handleUpdateTimeLog, getProjects, handlePostTimeLog } from "../../api";
 import { useStyles } from "./useStyles";
 import axiosInstance from "../../utils/axios-instance";
 import moment from "moment";
+import { Cyclone } from "@mui/icons-material";
 
 var interval;
 const TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(-1);
-  const [isStopRender, setStopRender] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
   const [projectName, setProjectName] = useState('Select a project');
   const [currentTimer, setCurrentTimer] = useState(0);
@@ -32,52 +33,53 @@ const TimeTracker = () => {
 
   useEffect(() => {
     window.electronApi.send("paused")
-    getProjects().then(res => {
-      if (res) {
-        setProjects(res);
+    async function getProjectData() {
+      console.log('getting projects on initial state')
+      const res = await getProjects()
+      const { result } = res
+      if(res.err_msg?.length === 0) {
+        setProjects(result);
         let totalTime = 0
-        res.map(project => totalTime += parseInt(project.time / 60));
 
+
+        result.map(project => totalTime += parseInt(project.time / 60));
         setTotalToday(totalTime * 60);
       }
-    }).catch(err => {
-    })
-
+    }
+    getProjectData()
   }, []);
 
   const handleProjectStart = async (project) => {
-    const { id, name, time, daily_limit_by_minute } = project;
-    setIsLimitReached(false);
-    setDailyLimit(`Today's Limit ${getHourMin(daily_limit_by_minute * 60)}`);
-    const returned_data = await handlePostTimeLog(time, id);
-    setActiveTimelogId(returned_data.data.id);
-    document.title = `${name}-Thriveva`
-    setActiveProjectId(id);
-    setProjectName(name);
-    setCurrentTimer(0);
-    clearInterval(interval);
-    window.electronApi.send("paused")
-    window.electronApi.send("project-started");
-    setStopRender(!isStopRender)
-    let filteredProject = projects.filter((item, i) => item.id === id);
-    if (filteredProject) {
-
-      interval = setInterval(() => {
-        setTotalToday(state => state += 1)
-        setCurrentTimer(state => state += 1);
-        filteredProject[0].time += 1;
-        setTotalToday(state => state++);
-
+    if(isLoading === false) {
+      setIsLoading(true)
+      const { id, name, time, daily_limit_by_minute } = project;
+      setIsLimitReached(false);
+      setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
+      const returned_data = await handlePostTimeLog(time, id);
+      setActiveTimelogId(returned_data.data.id);
+      document.title = `${name}-Thriveva`
+      setActiveProjectId(id);
+      setProjectName(name);
+      setCurrentTimer(0);
+      clearInterval(interval);
+      window.electronApi.send("paused")
+      window.electronApi.send("project-started");
+      let filteredProject = projects.filter((item, i) => item.id === id);
+      if (filteredProject) {
+        interval = setInterval(() => {
+          setTotalToday(state => state += 1)
+          setCurrentTimer(state => state += 1);
+          filteredProject[0].time += 1;
+          setTotalToday(state => state++);
+        }, 1000)
+      } else {
+        return null;
       }
-        , 1000
-      )
-
-    } else {
-      return null;
+      setIsLoading(false)
     }
   };
 
-  const handlePause = (projectId) => {
+  const handlePause = async(projectId) => {
     setCurrentTimer(0)
     setDailyLimit("No Daily Limit")
     document.title = "Thriveva"
@@ -86,7 +88,7 @@ const TimeTracker = () => {
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      handleUpdateTimeLog(...project, activeTimelogId)
+      await handleUpdateTimeLog(...project, activeTimelogId)
       clearInterval(interval)
       window.electronApi.send('paused');
     } else {
@@ -94,42 +96,36 @@ const TimeTracker = () => {
     }
   };
 
-  useEffect(
-    () => {
-      let data = []
-      if (noEvents < 6) {
-        if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
-          data = JSON.parse(localStorage.getItem('screenshot'));
-          let newArr = data.map(val => {
-            if (val.keyboard === 0 && val.mouse === 0) {
-              setNoEvents(state => state + 1)
-            } else {
-              setNoEvents(0)
-            }
-            if (val.loggedTime) {
-              return { ...val }
-            } else {
-              return {
-                ...val,
-                generated_at: moment().utc("YYYY-MM-DD hh:mm:ss"),
-                project_id: activeProjectId
+  useEffect(() => {
+    let data = []
+    if (noEvents < 6) {
+      if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
+        data = JSON.parse(localStorage.getItem('screenshot'));
+        let newArr = data.map(val => {
+          if (val.keyboard === 0 && val.mouse === 0) {
+            setNoEvents(state => state + 1)
+          } else {
+            setNoEvents(0)
+          }
+          if (val.loggedTime) {
+            return { ...val }
+          } else {
+            return {
+              ...val,
+              generated_at: moment().utc("YYYY-MM-DD hh:mm:ss"),
+              project_id: activeProjectId
 
-              }
             }
-          })
-          postSsData(newArr);
-        }
-      } else {
-        handlePause(activeProjectId);
+          }
+        })
+        postSsData(newArr);
       }
-   // eslint-disable-next-line
-    }, [localStorage.getItem('screenshot')]
-  )
-
+    } else {
+      handlePause(activeProjectId);
+    }
+  }, [localStorage.getItem('screenshot')])
 
   const postSsData = (newArr) => {
-
-
     let failedSs = []
     let onComplete = []
     if (newArr && newArr.length) {
@@ -139,6 +135,7 @@ const TimeTracker = () => {
       }
       let arrayToFetch = [...failSsToSend, ...newArr]
       arrayToFetch.map(async item => {
+        console.log(item)
         let res = {}
         if (item.second_screenshot) {
           try {
@@ -147,6 +144,7 @@ const TimeTracker = () => {
             onComplete.push(res)
           }
           catch (err) {
+            console.log(err)
             onComplete.push(err)
             failedSs.push(item);
           }
@@ -157,6 +155,7 @@ const TimeTracker = () => {
             onComplete.push(res)
           }
           catch (err) {
+            console.log(err)
             onComplete.push(err)
             failedSs.push(item);
           }
@@ -165,7 +164,6 @@ const TimeTracker = () => {
             localStorage.setItem('failedSS', JSON.stringify(failedSs));
           }
         }
-
       })
     }
   }
@@ -173,7 +171,6 @@ const TimeTracker = () => {
   const handleLimitReached = () => {
     setIsLimitReached(true)
     setTimeout(() => setIsLimitReached(false), 4000);
-
   }
 
   return (
@@ -263,15 +260,15 @@ const TimeTracker = () => {
                             }}
                           >
                             {activeProjectId !== project.id ? (
-                              <Box onClick={() => {
-                                project.time / 60 >= project.daily_limit_by_minute ?
-                                  handleLimitReached() : handleProjectStart(project);
+                              <Box onClick={async() => {
+                                (project.time / 60 >= project.daily_limit_by_minute && project.daily_limit_by_minute !== 0) ?
+                                  handleLimitReached() : await handleProjectStart(project);
                               }}>
                                 {<StartIcon />}
                               </Box>
                             ) : (
-                              <Box onClick={() => {
-                                handlePause(project.id)
+                              <Box onClick={async() => {
+                                await handlePause(project.id)
                               }
 
                               }>

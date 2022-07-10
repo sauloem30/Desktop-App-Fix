@@ -27,8 +27,6 @@ const store = new Storage({ schema })
 let win = null;
 let splash;
 
-
-
 function createWindow() {
   // Create the browser window.
   win = new BrowserWindow({
@@ -44,6 +42,7 @@ function createWindow() {
     show: false
   });
 
+  win.removeMenu()
 
   // and load the index.html of the app.
   // win.loadFile("index.html");
@@ -93,14 +92,7 @@ app.on("activate", () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
-
-
 });
-
-
-// app.on('browser-window-blur', function () {
-
-// });
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -125,11 +117,6 @@ ipcMain.on("quiteApp", async (event, data) => {
   }
 });
 
-
-
-
-
-
 ipcMain.on("project-started", async (event, data) => {
   uIOhook.start()
   CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000))
@@ -137,12 +124,11 @@ ipcMain.on("project-started", async (event, data) => {
     () => {
       CaptureTimeout = setTimeout(() => {
         captureFunction()
-      }, getRandomInt(9000, 90000));
+      }, getRandomInt(1000, 199980));
     }
-    , 200000
+    , 199998
   )
 });
-
 
 // getting mouse keyboard events 
 
@@ -150,14 +136,9 @@ uIOhook.on('mousedown', (e) => {
   mouse += 1
 })
 
-
-
 uIOhook.on('keydown', (e) => {
   keyboard += 1
 })
-
-
-
 
 captureFunction = () => {
   let captureImg;
@@ -165,7 +146,7 @@ captureFunction = () => {
   desktopCapturer
     .getSources({
       types: ["screen"],
-      thumbnailSize: { width: 1920, height: 1080 },
+      thumbnailSize: { width: 1200, height: 675 },
     })
     .then((sources) => {
       sources.forEach(async (source, index) => {

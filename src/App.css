@@ -10,3 +10,12 @@
   display: none;
 }
 
+@font-face {
+  font-family: "Gilroy";
+  src: url("/public/fonts/gilroy.otf");
+}
+
+@font-face {
+  font-family: "Gilroy-bold";
+  src: url("/public/fonts/gilroy-bold.otf");
+}
