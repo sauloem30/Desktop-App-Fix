@@ -2,10 +2,16 @@ const path = require("path");
 const fs = require("fs");
 const fsExtra = require('fs-extra')
 const Storage = require('electron-store');
-var CaptureSSinterval = "";
-var CaptureTimeout = "";
-var keyboard = 0;
-var mouse = 0
+const axios  = require('axios');
+const moment  = require('moment');
+const electron = require('electron');
+const screenElectron = electron.screen;
+
+let CaptureSSinterval = "";
+let CaptureTimeout = "";
+let CaptureMouseActivity = ""
+let keyboard = 0;
+let mouse = 0
 const {
   app,
   BrowserWindow,
@@ -15,6 +21,8 @@ const {
 } = require("electron");
 const isDev = require("electron-is-dev");
 const { uIOhook } = require("uiohook-napi");
+let hasMouseActivity = false
+let hasKeyboardActivity = false
 
 const schema = {
   defaultKeyCombination: {
@@ -26,13 +34,19 @@ const store = new Storage({ schema })
 
 let win = null;
 let splash;
+let projectData = []
 
 function createWindow() {
   // Create the browser window.
+  let mainScreen = screenElectron.getPrimaryDisplay();
+  let dimensions = mainScreen.size;
+
   win = new BrowserWindow({
     width: 360,
-    height: 600,
-    maximizable: false,
+    height: dimensions.height - 20,
+    x: 10,
+    y: 10,
+    maximizable: true,
     icon: __dirname + 'Icon.icns',
     resizable: false,
     webPreferences: {
@@ -67,8 +81,6 @@ function createWindow() {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(() => {
-
-
   splash = new BrowserWindow({ width: 810, height: 610, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
   splash.loadURL(`file://${__dirname}/splash.html`);
 
@@ -81,7 +93,29 @@ app.whenReady().then(() => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
+  if (process.platform !== "darwin") { 
+    const ProcessOut = async() => {
+      const {id , projectId, userId} = projectData
+      if(id && projectId && userId) {
+        const processData = async() => {
+          const obj = {
+            time_out: moment().utc(),
+            application_type : 'desktop-auto',
+            project_id: projectId,
+            user_id: userId,
+            id : id,
+          }
+          try {
+            await axios.post(`http://localhost:3000/api/timelog/time_out`, obj);
+          }
+          catch (err) {
+            console.log(err)
+          }
+        }
+        await processData()
+      }
+    }
+    ProcessOut();
     app.quit();
   }
 });
@@ -93,6 +127,7 @@ app.on("activate", () => {
     createWindow();
   }
 });
+
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -107,6 +142,7 @@ ipcMain.on("paused", async (event, data) => {
 
   clearInterval(CaptureSSinterval);
   clearTimeout(CaptureTimeout);
+  clearInterval(CaptureMouseActivity);
 
 });
 
@@ -120,24 +156,52 @@ ipcMain.on("quiteApp", async (event, data) => {
 ipcMain.on("project-started", async (event, data) => {
   uIOhook.start()
   CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000))
-  CaptureSSinterval = setInterval(
+  CaptureMouseActivity = setInterval(
     () => {
+      if(hasMouseActivity && hasKeyboardActivity) {
+        mouse++
+        hasMouseActivity = false
+        hasKeyboardActivity = false
+      } else if(hasMouseActivity) {
+        mouse++
+        hasMouseActivity = false
+      } else if (hasKeyboardActivity) {
+        keyboard++
+        hasKeyboardActivity = false
+      }
+    }
+  , 1000)
+  CaptureSSinterval = setInterval(
+    () => {     
       CaptureTimeout = setTimeout(() => {
         captureFunction()
-      }, getRandomInt(1000, 199980));
+      }, getRandomInt(10000, 199980));
     }
     , 199998
   )
+
+  win.webContents
+    .executeJavaScript('localStorage.getItem("projectData");', true)
+    .then(result => {
+      projectData = JSON.parse(result)[0]
+    });
 });
 
 // getting mouse keyboard events 
-
-uIOhook.on('mousedown', (e) => {
-  mouse += 1
+uIOhook.on('keydown', (e) => {
+  hasKeyboardActivity = true
 })
 
-uIOhook.on('keydown', (e) => {
-  keyboard += 1
+uIOhook.on('mousedown', (e) => {
+  hasMouseActivity = true
+})
+
+uIOhook.on('mousemove', (e) => {
+  hasMouseActivity = true
+})
+
+uIOhook.on('wheel', (e) => {
+  hasMouseActivity = true
 })
 
 captureFunction = () => {
@@ -146,7 +210,7 @@ captureFunction = () => {
   desktopCapturer
     .getSources({
       types: ["screen"],
-      thumbnailSize: { width: 1200, height: 675 },
+      thumbnailSize: { width: 889, height: 500 },
     })
     .then((sources) => {
       sources.forEach(async (source, index) => {
@@ -159,20 +223,29 @@ captureFunction = () => {
         }
 
         setTimeout(() => {
+          // create directory when missing 
+          var dir = path.join(__dirname, './images/screenshots');
+
+          if (!fs.existsSync(dir)){
+            fs.mkdirSync(dir, { recursive: true });
+          }
           fs.writeFile(
-            path.resolve(__dirname, `./images/${source.name == "Entire Screen" ? "screenshot-1.png" : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`),
+            path.resolve(__dirname, `./images/screenshots/${source.name == "Entire Screen" ? "screenshot-1.png" : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`),
             source.name == "Entire Screen" ? captureImg : source.name == "Screen 1" ? captureImg : captureImg2,
             () => {
+              let mainScreen = screenElectron.getPrimaryDisplay();
+
               const windowCap = new BrowserWindow({
                 maximizable: false,
                 width: 300,
                 height: 200,
                 modal: true,
-                x: 20,
-                y: 20,
+                x: mainScreen.bounds.width - 320,
+                y: mainScreen.bounds.height - 270,
                 autoHideMenuBar: true,
                 frame: false,
               });
+              
               if (source.name == "Entire Screen") {
                 windowCap.loadURL(`file://${path.join(__dirname, `/screenshot.html`)}`);
                 const image = source.thumbnail.toDataURL();
@@ -190,7 +263,7 @@ captureFunction = () => {
               }
               setTimeout(() => {
                 windowCap.close();
-                fsExtra.removeSync(`${__dirname}/images/${source.name == "Entire Screen" ? 'screenshot-1.png' : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`)
+                fsExtra.removeSync(`${__dirname}/images/screenshots/${source.name == "Entire Screen" ? 'screenshot-1.png' : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`)
               }, 5000);
             }
           )

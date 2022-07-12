@@ -20,10 +20,11 @@ var interval;
 const TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
-  const [activeProjectId, setActiveProjectId] = useState(-1);
+  const [activeProjectId, setActiveProjectId] = useState(false); //should be numeric but to make it faster, will retain false for the meantime
   const [isLoading, setIsLoading] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
   const [projectName, setProjectName] = useState('Select a project');
+  const [errorMessage, setErrorMessage] = useState('');
   const [currentTimer, setCurrentTimer] = useState(0);
   const [noEvents, setNoEvents] = useState(0);
   const [returnId, setReturnId] = useState('');
@@ -34,15 +35,13 @@ const TimeTracker = () => {
   useEffect(() => {
     window.electronApi.send("paused")
     async function getProjectData() {
-      console.log('getting projects on initial state')
       const res = await getProjects()
       const { result } = res
       if(res.err_msg?.length === 0) {
         setProjects(result);
         let totalTime = 0
 
-
-        result.map(project => totalTime += parseInt(project.time / 60));
+        result.map(project => totalTime += parseInt(project.time) / 60);
         setTotalToday(totalTime * 60);
       }
     }
@@ -50,34 +49,52 @@ const TimeTracker = () => {
   }, []);
 
   const handleProjectStart = async (project) => {
+    setErrorMessage('')
     if(isLoading === false) {
+      // Log out first if clocked in to another project
+      if(project.id !== activeProjectId && activeProjectId !== false) {
+        handleUpdateTimeLog( activeProjectId, activeTimelogId )
+      }
+
       setIsLoading(true)
       const { id, name, time, daily_limit_by_minute } = project;
       setIsLimitReached(false);
-      setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
       const returned_data = await handlePostTimeLog(time, id);
-      setActiveTimelogId(returned_data.data.id);
-      document.title = `${name}-Thriveva`
-      setActiveProjectId(id);
-      setProjectName(name);
-      setCurrentTimer(0);
-      clearInterval(interval);
-      window.electronApi.send("paused")
-      window.electronApi.send("project-started");
-      let filteredProject = projects.filter((item, i) => item.id === id);
-      if (filteredProject) {
-        interval = setInterval(() => {
-          setTotalToday(state => state += 1)
-          setCurrentTimer(state => state += 1);
-          filteredProject[0].time += 1;
-          setTotalToday(state => state++);
-        }, 1000)
+      if(returned_data.data.success) {
+        setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
+        setActiveTimelogId(returned_data.data.id)
+        document.title = `${name}-Thriveva`
+        setActiveProjectId(id);
+        localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
+        setProjectName(name);
+        setCurrentTimer(0);
+        clearInterval(interval);
+        window.electronApi.send("paused")
+        window.electronApi.send("project-started");
+        let filteredProject = projects.filter((item, i) => item.id === id);
+        if (filteredProject) {
+          interval = setInterval(async() => {
+            if(parseInt(filteredProject[0].time) / 60 !== (filteredProject[0].daily_limit_by_minute || filteredProject[0].daily_limit_by_minute === 0)) {
+              setTotalToday(state => state += 1)
+              setCurrentTimer(state => state += 1 );
+              filteredProject[0].time = parseInt(filteredProject[0].time) + 1;
+              setTotalToday(state => state++);
+            } else {
+              setIsLimitReached(true)
+              handlePause(filteredProject[0].id)
+            }
+          }, 1000)
+        } else {
+          return null;
+        }
       } else {
-        return null;
+        setErrorMessage(returned_data.data.error_message)
       }
+
       setIsLoading(false)
     }
   };
+
 
   const handlePause = async(projectId) => {
     setCurrentTimer(0)
@@ -85,14 +102,13 @@ const TimeTracker = () => {
     document.title = "Thriveva"
     setProjectName("Select a project")
     clearInterval(interval)
+    localStorage.setItem('projectData', JSON.stringify([]))
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
       await handleUpdateTimeLog(...project, activeTimelogId)
       clearInterval(interval)
       window.electronApi.send('paused');
-    } else {
-      return null;
     }
   };
 
@@ -112,7 +128,7 @@ const TimeTracker = () => {
           } else {
             return {
               ...val,
-              generated_at: moment().utc("YYYY-MM-DD hh:mm:ss"),
+              generated_at: moment().utc(),
               project_id: activeProjectId
 
             }
@@ -135,7 +151,6 @@ const TimeTracker = () => {
       }
       let arrayToFetch = [...failSsToSend, ...newArr]
       arrayToFetch.map(async item => {
-        console.log(item)
         let res = {}
         if (item.second_screenshot) {
           try {
@@ -144,7 +159,7 @@ const TimeTracker = () => {
             onComplete.push(res)
           }
           catch (err) {
-            console.log(err)
+            setErrorMessage(err)
             onComplete.push(err)
             failedSs.push(item);
           }
@@ -155,7 +170,7 @@ const TimeTracker = () => {
             onComplete.push(res)
           }
           catch (err) {
-            console.log(err)
+            setErrorMessage(err)
             onComplete.push(err)
             failedSs.push(item);
           }
@@ -216,10 +231,23 @@ const TimeTracker = () => {
             >
               Total today: {getHourMin(totalToday)}
             </Typography>
-            <Typography variant="body5">
-              <Box style={isLimitReached ? { display: 'block' } : { display: 'none' }} sx={{ position: 'absolute', left: "50%", color: 'red', transform: 'translate(-50%)' }}>Project Limit Is Reached</Box>
-            </Typography>
-            <div className={classes.loginContent}>
+            <div style={{textAlign: 'center', minHeight: 25}}>
+              {
+                isLimitReached && (
+                    <Typography variant="body5" style={{color: 'red'}}>
+                      Project Limit Reached
+                    </Typography>
+                )
+              }
+              {
+                errorMessage.length > 0 && (
+                    <Typography variant="body5" style={{color: 'red'}}>
+                      {errorMessage}
+                    </Typography>
+                )
+              }
+            </div>
+            <div>
               <List className={classes.style} component="nav" aria-label="mailbox folders">
                 <ListItem
                   button
@@ -230,7 +258,7 @@ const TimeTracker = () => {
                     <Typography variant="subheading1">Projects:</Typography>
                   </ListItemText>
                 </ListItem>
-                <div className="active_projects" >
+                <div className={classes.projectContainer} >
                   {projects.length? projects.map((project, index) => {
                     // setTotalToday(state=> state++)
                     return (
