@@ -68,7 +68,7 @@ const Signin = (props) => {
         password: password,
       },
     }).catch((error)=>{
-      setErrorMessage('Something Went Wrong');
+      setErrorMessage('Login Error. Please try again later.');
       setTimeout(()=>setErrorMessage(""), 5000);
       setIsLoading(false);
     });
@@ -111,6 +111,7 @@ const Signin = (props) => {
           method: "GET",
           url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
         });
+
         const isLoggedIn = responseJSON.data.success;
         if (isLoggedIn) {
           navigate("/timetracker");

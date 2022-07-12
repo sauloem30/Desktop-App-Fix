@@ -1,22 +1,21 @@
-import React, { useState, useEffect } from "react";
-import Grid from "@mui/material/Grid";
-import Paper from "@mui/material/Paper";
-import Typography from "@mui/material/Typography";
-import logo from "../../assests/images/app-logo.png";
 import Box from "@mui/material/Box";
 import Divider from "@mui/material/Divider";
+import Grid from "@mui/material/Grid";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemText from "@mui/material/ListItemText";
-import { StartIcon, PauseIcon } from "../../assests/icons/SvgIcons";
-import { getHourMin, getHourMinSec } from "../../utils/index";
-import { handleUpdateTimeLog, getProjects, handlePostTimeLog } from "../../api";
-import { useStyles } from "./useStyles";
-import axiosInstance from "../../utils/axios-instance";
+import Paper from "@mui/material/Paper";
+import Typography from "@mui/material/Typography";
 import moment from "moment";
-import { Cyclone } from "@mui/icons-material";
+import React, { useEffect, useState } from "react";
+import { getProjects, handlePostTimeLog, handleUpdateTimeLog } from "../../api";
+import { PauseIcon, StartIcon } from "../../assests/icons/SvgIcons";
+import logo from "../../assests/images/app-logo.png";
+import axiosInstance from "../../utils/axios-instance";
+import { getHourMin, getHourMinSec } from "../../utils/index";
+import { useStyles } from "./useStyles";
 
-var interval;
+let interval;
 const TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
@@ -43,6 +42,8 @@ const TimeTracker = () => {
 
         result.map(project => totalTime += parseInt(project.time) / 60);
         setTotalToday(totalTime * 60);
+      } else {
+        setErrorMessage("Error loading projects")
       }
     }
     getProjectData()
@@ -53,33 +54,40 @@ const TimeTracker = () => {
     if(isLoading === false) {
       // Log out first if clocked in to another project
       if(project.id !== activeProjectId && activeProjectId !== false) {
-        handleUpdateTimeLog( activeProjectId, activeTimelogId )
+        const response = await handleUpdateTimeLog( activeProjectId, activeTimelogId )
+        if(response.data?.error_message.length > 0) {
+          setErrorMessage(response.data.error_message)
+        }
       }
-
       setIsLoading(true)
-      const { id, name, time, daily_limit_by_minute } = project;
+      const { id, name, daily_limit_by_minute } = project;
       setIsLimitReached(false);
-      const returned_data = await handlePostTimeLog(time, id);
-      if(returned_data.data.success) {
+      const returned_data = await handlePostTimeLog(id);
+      if(returned_data.data?.success) {
+        setCurrentTimer(0)
         setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
         setActiveTimelogId(returned_data.data.id)
         document.title = `${name}-Thriveva`
         setActiveProjectId(id);
         localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
         setProjectName(name);
-        setCurrentTimer(0);
         clearInterval(interval);
         window.electronApi.send("paused")
         window.electronApi.send("project-started");
         let filteredProject = projects.filter((item, i) => item.id === id);
         if (filteredProject) {
+          setCurrentTimer(state => state += parseInt(filteredProject[0].time));
+          console.log(parseFloat(filteredProject[0].time), parseInt(filteredProject[0].time) / 60)
           interval = setInterval(async() => {
-            if(parseInt(filteredProject[0].time) / 60 !== (filteredProject[0].daily_limit_by_minute || filteredProject[0].daily_limit_by_minute === 0)) {
+            if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {
+              console.log('triggered', currentTimer)
+              
               setTotalToday(state => state += 1)
               setCurrentTimer(state => state += 1 );
               filteredProject[0].time = parseInt(filteredProject[0].time) + 1;
               setTotalToday(state => state++);
             } else {
+              console.log('here')
               setIsLimitReached(true)
               handlePause(filteredProject[0].id)
             }
@@ -95,8 +103,8 @@ const TimeTracker = () => {
     }
   };
 
-
   const handlePause = async(projectId) => {
+    setErrorMessage('')
     setCurrentTimer(0)
     setDailyLimit("No Daily Limit")
     document.title = "Thriveva"
@@ -106,9 +114,15 @@ const TimeTracker = () => {
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      await handleUpdateTimeLog(...project, activeTimelogId)
-      clearInterval(interval)
-      window.electronApi.send('paused');
+      const response = await handleUpdateTimeLog( ...project, activeTimelogId )
+      if(response.data?.success) {
+        clearInterval(interval)
+        window.electronApi.send('paused');
+      } else {
+        setErrorMessage(response.data.error_message)
+        clearInterval(interval)
+        window.electronApi.send('paused');
+      }
     }
   };
 
@@ -130,7 +144,6 @@ const TimeTracker = () => {
               ...val,
               generated_at: moment().utc(),
               project_id: activeProjectId
-
             }
           }
         })
@@ -260,7 +273,6 @@ const TimeTracker = () => {
                 </ListItem>
                 <div className={classes.projectContainer} >
                   {projects.length? projects.map((project, index) => {
-                    // setTotalToday(state=> state++)
                     return (
                       <div key={project.id} >
                         <ListItem
@@ -268,17 +280,12 @@ const TimeTracker = () => {
                           className={classes.ListItem}
                           sx={{
                             height: 54,
-                            // "&:focus": {
                             background: project.is_active ? "#E1F7F1" : "inherit",
                             "&:hover": {
-                              background: project.is_active
-                                ? "#E1F7F1"
-                                : "#F7F9FA",
+                              background: project.is_active ? "#E1F7F1" : "#F7F9FA",
                             },
-                            // },
                           }}
                         >
-
                           <Box
                             sx={{
                               display: "flex",
@@ -297,21 +304,16 @@ const TimeTracker = () => {
                             ) : (
                               <Box onClick={async() => {
                                 await handlePause(project.id)
-                              }
-
-                              }>
+                              }}>
                                 {<PauseIcon />}
                               </Box>
                             )}
-
                             <ListItemText
                               primary={project.name}
                               sx={{
                                 marginLeft: "8px",
                                 "& span":
-                                  project.name === "start"
-                                    ? { color: "#2A41E7" }
-                                    : { color: "#000000" },
+                                  project.name === "start" ? { color: "#2A41E7" } : { color: "#000000" },
                               }}
                             />
                           </Box>

@@ -8,7 +8,7 @@ export const getProjects = async () => {
     return response.data
   } catch (err) {
     // handle errors here
-    console.log(err)
+    return ({result: [], err_msg: {message: "Error Loading Projects"}})
   }
 };
 
@@ -22,15 +22,15 @@ export const handleUpdateTimeLog = async (project , activeId) => {
     id : activeId,
   }
   try {
-    await axiosInstance.post(`/timelog/time_out`, obj);
+    const response = await axiosInstance.post(`/timelog/time_out`, obj);
+    return response
   }
   catch (err) {
-    console.log(err)
+    return ({data: {success: false,error_message :"Error Clocking Out",inserted:[]}})
   }
 }
 
-export const handlePostTimeLog = async (project_time, project_id) => {
-    // time_in: moment(new Date()).format("YYYY-MM-DD hh:mm:ss"),
+export const handlePostTimeLog = async (project_id) => {
   const obj = {
     time_in: moment().utc(),
     application_type : 'desktop',
@@ -42,8 +42,6 @@ export const handlePostTimeLog = async (project_time, project_id) => {
     return res;
   }
   catch (err) {
-    console.log(err)
-
-    return err;
+    return ({data: {success:false, error_message: "Error Clocking In"}})
   }
 }
