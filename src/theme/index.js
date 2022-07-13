@@ -51,7 +51,7 @@ const theme = createTheme({
       fontSize: 20,
       fontWeight: 400,
       lineHeight: "24px",
-      fontFamily: "Nunito Sans",
+      fontFamily: "Gilroy",
     },
     h6: {
       fontSize: 14,
@@ -84,7 +84,7 @@ const theme = createTheme({
       fontWeight: 400,
       lineHeight: "24px",
       color: "#727272",
-      fontFamily: "Nunito Sans",
+      fontFamily: "Gilroy",
     },
     body3: {
       fontSize: 20,

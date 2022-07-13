@@ -47,6 +47,7 @@ const TimeTracker = () => {
       }
     }
     getProjectData()
+    setErrorMessage('')
   }, []);
 
   const handleProjectStart = async (project) => {
@@ -59,6 +60,7 @@ const TimeTracker = () => {
           setErrorMessage(response.data.error_message)
         }
       }
+
       setIsLoading(true)
       const { id, name, daily_limit_by_minute } = project;
       setIsLimitReached(false);
@@ -77,17 +79,13 @@ const TimeTracker = () => {
         let filteredProject = projects.filter((item, i) => item.id === id);
         if (filteredProject) {
           setCurrentTimer(state => state += parseInt(filteredProject[0].time));
-          console.log(parseFloat(filteredProject[0].time), parseInt(filteredProject[0].time) / 60)
           interval = setInterval(async() => {
-            if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {
-              console.log('triggered', currentTimer)
-              
+            if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
               setTotalToday(state => state += 1)
               setCurrentTimer(state => state += 1 );
               filteredProject[0].time = parseInt(filteredProject[0].time) + 1;
               setTotalToday(state => state++);
             } else {
-              console.log('here')
               setIsLimitReached(true)
               handlePause(filteredProject[0].id)
             }

@@ -96,30 +96,31 @@ const Signin = (props) => {
     setIsRemember(event.target.checked);
   };
 
+  const checkSession = async () => {
+    const rememberedUser =  JSON.parse(localStorage.getItem('isRemember'));
+    
+    setIsRemember(JSON.parse(localStorage.getItem('isRemember')));
+
+    if (rememberedUser) {
+      const responseJSON = await axiosInstance.request({
+        method: "GET",
+        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
+      });
+
+      const isLoggedIn = responseJSON.data.success;
+      if (isLoggedIn) {
+        navigate("/timetracker");
+      }
+    }
+  };
+
   useEffect(() => {
     setIsSuccessToast(location?.state?.isSuccess)
   }, [location?.state?.isSuccess])
 
   useEffect(() => {
-    const checkSession = async () => {
-      const rememberedUser =  JSON.parse(localStorage.getItem('isRemember'));
-      
-      setIsRemember(JSON.parse(localStorage.getItem('isRemember')));
-
-      if (rememberedUser) {
-        const responseJSON = await axiosInstance.request({
-          method: "GET",
-          url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
-        });
-
-        const isLoggedIn = responseJSON.data.success;
-        if (isLoggedIn) {
-          navigate("/timetracker");
-        }
-      }
-    };
     checkSession();
-  }, [navigate]);
+  }, []);
 
   const handleToast = () => {
     setIsSuccessToast(false)
@@ -238,6 +239,7 @@ const Signin = (props) => {
                             checked={isRemember}
                           />
                         }
+                        style={{fontSize: 14}}
                         label="Remember me"
                       />
                     </Typography>
