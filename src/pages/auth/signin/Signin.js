@@ -74,6 +74,9 @@ const Signin = (props) => {
     });
     if (response.data.success === true) {
       localStorage.setItem('isRemember' , JSON.parse(isRemember));
+
+      // temporary solution
+      localStorage.setItem('userId' , JSON.parse(response.data.user_id));
       setIsLoading(false);
       navigate("/timetracker");
     } else {
@@ -98,16 +101,17 @@ const Signin = (props) => {
 
   const checkSession = async () => {
     const rememberedUser =  JSON.parse(localStorage.getItem('isRemember'));
+    const userId = localStorage.getItem('userId');
     
     setIsRemember(JSON.parse(localStorage.getItem('isRemember')));
 
     if (rememberedUser) {
-      const responseJSON = await axiosInstance.request({
-        method: "GET",
-        url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
-      });
-
-      const isLoggedIn = responseJSON.data.success;
+      // const responseJSON = await axiosInstance.request({
+      //   method: "GET",
+      //   url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
+      // });
+      console.log(rememberedUser, parseInt(userId))
+      const isLoggedIn = rememberedUser && parseInt(userId) > 0;
       if (isLoggedIn) {
         navigate("/timetracker");
       }

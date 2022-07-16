@@ -30,11 +30,14 @@ const TimeTracker = () => {
   const [activeTimelogId, setActiveTimelogId] = useState(-1);
   const [dailyLimit, setDailyLimit] = useState("No Daily Limit")
   const [isLimitReached, setIsLimitReached] = useState(false);
-
+  const [userId, setUserId] = useState(0);
+  
   useEffect(() => {
     window.electronApi.send("paused")
+    const user = localStorage.getItem("userId")
+    console.log(user)
     async function getProjectData() {
-      const res = await getProjects()
+      const res = await getProjects(user)
       const { result } = res
       if(res.err_msg?.length === 0) {
         setProjects(result);
@@ -47,15 +50,17 @@ const TimeTracker = () => {
       }
     }
     getProjectData()
+    setUserId(parseInt(user))
     setErrorMessage('')
   }, []);
 
   const handleProjectStart = async (project) => {
     setErrorMessage('')
+    const userId = parseInt(localStorage.getItem("userId"))
     if(isLoading === false) {
       // Log out first if clocked in to another project
       if(project.id !== activeProjectId && activeProjectId !== false) {
-        const response = await handleUpdateTimeLog( activeProjectId, activeTimelogId )
+        const response = await handleUpdateTimeLog( activeProjectId, activeTimelogId, userId )
         if(response.data?.error_message.length > 0) {
           setErrorMessage(response.data.error_message)
         }
@@ -64,7 +69,7 @@ const TimeTracker = () => {
       setIsLoading(true)
       const { id, name, daily_limit_by_minute } = project;
       setIsLimitReached(false);
-      const returned_data = await handlePostTimeLog(id);
+      const returned_data = await handlePostTimeLog(id, userId);
       if(returned_data.data?.success) {
         setCurrentTimer(0)
         setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
@@ -112,7 +117,7 @@ const TimeTracker = () => {
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      const response = await handleUpdateTimeLog( ...project, activeTimelogId )
+      const response = await handleUpdateTimeLog( ...project, activeTimelogId, userId )
       if(response.data?.success) {
         clearInterval(interval)
         window.electronApi.send('paused');

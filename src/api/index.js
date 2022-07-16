@@ -1,10 +1,9 @@
 import moment from "moment";
 import axiosInstance from "../utils/axios-instance";
-import axios from "axios";
 
-export const getProjects = async () => {
+export const getProjects = async (userId) => {
   try {
-    const response = await axios.get(`${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active`)
+    const response = await axiosInstance.get(`${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active?user_id=${userId}`)
     return response.data
   } catch (err) {
     // handle errors here
@@ -12,7 +11,7 @@ export const getProjects = async () => {
   }
 };
 
-export const handleUpdateTimeLog = async (project , activeId) => {
+export const handleUpdateTimeLog = async (project , activeId, userId) => {
   const { id } = project;
   // handlePause(id);
   const obj = {
@@ -20,6 +19,7 @@ export const handleUpdateTimeLog = async (project , activeId) => {
     application_type : 'desktop',
     project_id: id,
     id : activeId,
+    user_id: userId
   }
   try {
     const response = await axiosInstance.post(`/timelog/time_out`, obj);
@@ -30,11 +30,12 @@ export const handleUpdateTimeLog = async (project , activeId) => {
   }
 }
 
-export const handlePostTimeLog = async (project_id) => {
+export const handlePostTimeLog = async (project_id, user_id) => {
   const obj = {
     time_in: moment().utc(),
     application_type : 'desktop',
     project_id: project_id,
+    user_id: user_id,
   }
   let res;
   try {
