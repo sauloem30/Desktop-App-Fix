@@ -248,7 +248,7 @@ captureFunction = () => {
               if (source.name == "Entire Screen") {
                 windowCap.loadURL(`file://${path.join(__dirname, `/screenshot.html`)}`);
                 const image = source.thumbnail.toDataURL();
-                win.webContents.send('asynchronous-message', { image, keyboard, mouse });
+                win.webContents.send('asynchronous-message', { image, keyboard, mouse, user_id: projectData.userId });
                 keyboard = 0;
                 mouse = 0;
 
@@ -256,13 +256,13 @@ captureFunction = () => {
               else if (source.name == "Screen 1" || source.name == "Screen 2") {
                 windowCap.loadURL(`file://${path.join(__dirname, `/multiscreenshots.html`)}`);
                 const image = source.thumbnail.toDataURL();
-                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard, mouse }) :
+                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard, mouse, user_id: projectData.user_id }) :
                   win.webContents.send('asynchronous-message', { image, keyboard, mouse, second_screenshot: true });
 
               }
               setTimeout(() => {
                 windowCap.close();
-                fsExtra.removeSync(`${__dirname}/images/screenshots/${source.name == "Entire Screen" ? 'screenshot-1.png' : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`)
+                fsExtra.removeSync(`c:/images/screenshots/${source.name == "Entire Screen" ? 'screenshot-1.png' : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`)
               }, 5000);
             }
           )
