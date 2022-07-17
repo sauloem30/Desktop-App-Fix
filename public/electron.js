@@ -92,7 +92,7 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on("window-all-closed", () => {
+app.on("window-all-closed", async() => {
   if (process.platform !== "darwin") { 
     const ProcessOut = async() => {
       const {id , projectId, userId} = projectData
@@ -106,7 +106,7 @@ app.on("window-all-closed", () => {
             id : id,
           }
           try {
-            await axios.post(`http://localhost:3000/api/timelog/time_out`, obj);
+            await axios.post(`http://localhost:4301/api/timelog/time_out`, obj);
           }
           catch (err) {
             console.log(err)
@@ -115,7 +115,7 @@ app.on("window-all-closed", () => {
         await processData()
       }
     }
-    ProcessOut();
+    await ProcessOut();
     app.quit();
   }
 });
@@ -224,13 +224,12 @@ captureFunction = () => {
 
         setTimeout(() => {
           // create directory when missing 
-          var dir = path.join(__dirname, './images/screenshots');
-
+          var dir = path.resolve('c:/images/screenshots');
           if (!fs.existsSync(dir)){
             fs.mkdirSync(dir, { recursive: true });
           }
           fs.writeFile(
-            path.resolve(__dirname, `./images/screenshots/${source.name == "Entire Screen" ? "screenshot-1.png" : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`),
+            path.resolve(`c:/images/screenshots/${source.name == "Entire Screen" ? "screenshot-1.png" : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`),
             source.name == "Entire Screen" ? captureImg : source.name == "Screen 1" ? captureImg : captureImg2,
             () => {
               let mainScreen = screenElectron.getPrimaryDisplay();

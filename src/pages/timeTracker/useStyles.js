@@ -17,7 +17,6 @@ export const useStyles = makeStyles((theme) => ({
 	},
 	style:{
 		width: "100%",
-		maxWidth: 360,
 		bgcolor: "background.paper",
 	},
 	loginContent: {

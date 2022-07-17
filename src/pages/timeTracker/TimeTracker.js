@@ -35,7 +35,6 @@ const TimeTracker = () => {
   useEffect(() => {
     window.electronApi.send("paused")
     const user = localStorage.getItem("userId")
-    console.log(user)
     async function getProjectData() {
       const res = await getProjects(user)
       const { result } = res
