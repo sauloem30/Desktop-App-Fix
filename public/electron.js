@@ -106,7 +106,7 @@ app.on("window-all-closed", async() => {
             id : id,
           }
           try {
-            await axios.post(`http://localhost:4301/api/timelog/time_out`, obj);
+            await axios.post(`http://3.83.193.123/api/timelog/time_out`, obj);
           }
           catch (err) {
             console.log(err)
@@ -189,19 +189,27 @@ ipcMain.on("project-started", async (event, data) => {
 
 // getting mouse keyboard events 
 uIOhook.on('keydown', (e) => {
-  hasKeyboardActivity = true
+  if(!hasKeyboardActivity) {
+    hasKeyboardActivity = true
+  }
 })
 
 uIOhook.on('mousedown', (e) => {
-  hasMouseActivity = true
+  if(!hasMouseActivity) {
+    hasMouseActivity = true
+  }
 })
 
 uIOhook.on('mousemove', (e) => {
-  hasMouseActivity = true
+  if(!hasMouseActivity) {
+    hasMouseActivity = true
+  }
 })
 
 uIOhook.on('wheel', (e) => {
-  hasMouseActivity = true
+  if(!hasMouseActivity) {
+    hasMouseActivity = true
+  }
 })
 
 captureFunction = () => {
