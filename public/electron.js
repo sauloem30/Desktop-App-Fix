@@ -6,6 +6,7 @@ const axios  = require('axios');
 const moment  = require('moment');
 const electron = require('electron');
 const screenElectron = electron.screen;
+const { dialog } = require('electron')
 
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
@@ -215,10 +216,12 @@ uIOhook.on('wheel', (e) => {
 captureFunction = () => {
   let captureImg;
   let captureImg2;
+  let mainScreen = screenElectron.getPrimaryDisplay();
+
   desktopCapturer
     .getSources({
       types: ["screen"],
-      thumbnailSize: { width: 889, height: 500 },
+      thumbnailSize: { width: 1280, height: 768 },
     })
     .then((sources) => {
       sources.forEach(async (source, index) => {
@@ -227,7 +230,8 @@ captureFunction = () => {
         }
         else if (source.name == 'Screen 2') {
           captureImg2 = source.thumbnail.toPNG();
-
+        } else {
+          return;
         }
 
         setTimeout(() => {
@@ -240,8 +244,6 @@ captureFunction = () => {
             path.resolve(`c:/images/screenshots/${source.name == "Entire Screen" ? "screenshot-1.png" : source.name == "Screen 1" ? "screenshot-1.png" : "screenshot-2.png"}`),
             source.name == "Entire Screen" ? captureImg : source.name == "Screen 1" ? captureImg : captureImg2,
             () => {
-              let mainScreen = screenElectron.getPrimaryDisplay();
-
               const windowCap = new BrowserWindow({
                 maximizable: false,
                 width: 300,
@@ -265,7 +267,7 @@ captureFunction = () => {
                 windowCap.loadURL(`file://${path.join(__dirname, `/multiscreenshots.html`)}`);
                 const image = source.thumbnail.toDataURL();
                 source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard, mouse, user_id: projectData.user_id }) :
-                  win.webContents.send('asynchronous-message', { image, keyboard, mouse, second_screenshot: true });
+                  win.webContents.send('asynchronous-message', { image, keyboard, mouse, second_screenshot: true, user_id: projectData.userId  });
 
               }
               setTimeout(() => {
