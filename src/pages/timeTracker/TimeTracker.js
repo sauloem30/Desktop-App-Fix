@@ -30,6 +30,7 @@ const TimeTracker = () => {
   const [activeTimelogId, setActiveTimelogId] = useState(-1);
   const [dailyLimit, setDailyLimit] = useState("No Daily Limit")
   const [isLimitReached, setIsLimitReached] = useState(false);
+  const [isClearScreenshots, setIsClearScreenshots] = useState(false);
   const [userId, setUserId] = useState(0);
   
   useEffect(() => {
@@ -129,34 +130,37 @@ const TimeTracker = () => {
   };
 
   useEffect(() => {
-    let data = []
-    if (noEvents < 6) {
-      if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
-        data = JSON.parse(localStorage.getItem('screenshot'));
-        let newArr = data.map(val => {
-          if (val.keyboard === 0 && val.mouse === 0) {
-            setNoEvents(state => state + 1)
-          } else {
-            setNoEvents(0)
-          }
-          if (val.loggedTime) {
-            return { ...val }
-          } else {
-            return {
-              ...val,
-              generated_at: moment().utc(),
-              project_id: activeProjectId
+    if(!isClearScreenshots && activeProjectId) {
+      let data = []
+      if (noEvents < 6) {
+        if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
+          data = JSON.parse(localStorage.getItem('screenshot'));
+          let newArr = data.map(val => {
+            if (val.keyboard === 0 && val.mouse === 0) {
+              setNoEvents(state => state + 1)
+            } else {
+              setNoEvents(0)
             }
-          }
-        })
-        postSsData(newArr);
+            if (val.loggedTime) {
+              return { ...val }
+            } else {
+              return {
+                ...val,
+                generated_at: moment().utc(),
+                project_id: activeProjectId
+              }
+            }
+          })
+          postSsData(newArr);
+        }
+      } else {
+        handlePause(activeProjectId);
       }
-    } else {
-      handlePause(activeProjectId);
     }
-  }, [localStorage.getItem('screenshot')])
 
-  const postSsData = (newArr) => {
+  }, [localStorage.getItem('screenshot'), isClearScreenshots])
+
+  const postSsData = async(newArr) => {
     let failedSs = []
     let onComplete = []
     if (newArr && newArr.length) {
@@ -190,8 +194,12 @@ const TimeTracker = () => {
             failedSs.push(item);
           }
           if (newArr.length === onComplete.length) {
-            localStorage.setItem('screenshot', JSON.stringify([]));
-            localStorage.setItem('failedSS', JSON.stringify(failedSs));
+            setIsClearScreenshots(true);
+            await localStorage.setItem('screenshot', JSON.stringify([]));
+            await localStorage.setItem('failedSS', JSON.stringify([]));
+            await localStorage.setItem('failedSS', JSON.stringify(failedSs));
+            setIsClearScreenshots(false);
+
           }
         }
       })

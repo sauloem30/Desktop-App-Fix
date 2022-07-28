@@ -266,7 +266,7 @@ captureFunction = () => {
               else if (source.name == "Screen 1" || source.name == "Screen 2") {
                 windowCap.loadURL(`file://${path.join(__dirname, `/multiscreenshots.html`)}`);
                 const image = source.thumbnail.toDataURL();
-                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard, mouse, user_id: projectData.user_id }) :
+                source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard, mouse, user_id: projectData.userId }) :
                   win.webContents.send('asynchronous-message', { image, keyboard, mouse, second_screenshot: true, user_id: projectData.userId  });
 
               }

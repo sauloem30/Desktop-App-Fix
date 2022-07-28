@@ -110,7 +110,6 @@ const Signin = (props) => {
       //   method: "GET",
       //   url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
       // });
-      console.log(rememberedUser, parseInt(userId))
       const isLoggedIn = rememberedUser && parseInt(userId) > 0;
       if (isLoggedIn) {
         navigate("/timetracker");
