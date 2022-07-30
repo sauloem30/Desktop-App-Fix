@@ -160,7 +160,7 @@ const TimeTracker = () => {
 
   }, [localStorage.getItem('screenshot'), isClearScreenshots])
 
-  const postSsData = async(newArr) => {
+  const postSsData = (newArr) => {
     let failedSs = []
     let onComplete = []
     if (newArr && newArr.length) {
@@ -193,15 +193,11 @@ const TimeTracker = () => {
             onComplete.push(err)
             failedSs.push(item);
           }
-          if (newArr.length === onComplete.length) {
-            setIsClearScreenshots(true);
-            await localStorage.setItem('screenshot', JSON.stringify([]));
-            await localStorage.setItem('failedSS', JSON.stringify([]));
-            await localStorage.setItem('failedSS', JSON.stringify(failedSs));
-            setIsClearScreenshots(false);
-
-          }
         }
+        setIsClearScreenshots(true);
+        localStorage.setItem('screenshot', JSON.stringify([]));
+        localStorage.setItem('failedSS', JSON.stringify(failedSs));
+        setIsClearScreenshots(false);
       })
     }
   }
