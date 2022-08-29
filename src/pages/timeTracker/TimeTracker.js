@@ -7,13 +7,19 @@ import ListItemText from "@mui/material/ListItemText";
 import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import moment from "moment";
-import React, { useEffect, useState } from "react";
-import { getProjects, handlePostTimeLog, handleUpdateTimeLog } from "../../api";
-import { PauseIcon, StartIcon } from "../../assests/icons/SvgIcons";
+import React, { useEffect, useState, useRef } from "react";
+import { getProjects, handlePostTimeLog, handleUpdateTimeLog, handleLogout } from "../../api";
+import { PauseIcon, StartIcon, MenuIcon } from "../../assests/icons/SvgIcons";
 import logo from "../../assests/images/app-logo.png";
 import axiosInstance from "../../utils/axios-instance";
 import { getHourMin, getHourMinSec } from "../../utils/index";
 import { useStyles } from "./useStyles";
+import ClickAwayListener from '@mui/material/ClickAwayListener';
+import Grow from '@mui/material/Grow';
+import Popper from '@mui/material/Popper';
+import MenuItem from '@mui/material/MenuItem';
+import MenuList from '@mui/material/MenuList';
+import { useNavigate } from "react-router-dom";
 
 let interval;
 const TimeTracker = () => {
@@ -32,27 +38,34 @@ const TimeTracker = () => {
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [isClearScreenshots, setIsClearScreenshots] = useState(false);
   const [userId, setUserId] = useState(0);
-  
+  const [open, setOpen] = useState(false);
+  const anchorRef = useRef(null);
+  const navigate = useNavigate();
+
   useEffect(() => {
     window.electronApi.send("paused")
     const user = localStorage.getItem("userId")
-    async function getProjectData() {
-      const res = await getProjects(user)
-      const { result } = res
-      if(res.err_msg?.length === 0) {
-        setProjects(result);
-        let totalTime = 0
 
-        result.map(project => totalTime += parseInt(project.time) / 60);
-        setTotalToday(totalTime * 60);
-      } else {
-        setErrorMessage("Error loading projects")
-      }
-    }
     getProjectData()
     setUserId(parseInt(user))
     setErrorMessage('')
   }, []);
+
+  async function getProjectData() {
+    const user = localStorage.getItem("userId")
+
+    const res = await getProjects(user)
+    const { result } = res
+    if(res.err_msg?.length === 0) {
+      setProjects(result);
+      let totalTime = 0
+
+      result.map(project => totalTime += parseInt(project.time) / 60);
+      setTotalToday(totalTime * 60);
+    } else {
+      setErrorMessage("Error loading projects")
+    }
+  }
 
   const handleProjectStart = async (project) => {
     setErrorMessage('')
@@ -86,10 +99,25 @@ const TimeTracker = () => {
           setCurrentTimer(state => state += parseInt(filteredProject[0].time));
           interval = setInterval(async() => {
             if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
-              setTotalToday(state => state += 1)
-              setCurrentTimer(state => state += 1 );
-              filteredProject[0].time = parseInt(filteredProject[0].time) + 1;
-              setTotalToday(state => state++);
+              // handle auto out when midnight is reached
+              if (moment().format("Hms") === "000") {
+                const response = await handleUpdateTimeLog( id, returned_data.data.id, userId, true )
+                if(response.data?.error_message.length > 0) {
+                  setErrorMessage(response.data.error_message)
+                }
+
+                setCurrentTimer(0);
+                setTotalToday(0);
+                // Update limit here
+                await getProjectData()
+                await handlePostTimeLog(id, userId, true);
+                
+              } else {
+                setTotalToday(state => state += 1)
+                setCurrentTimer(state => state += 1 );
+                filteredProject[0].time = parseInt(filteredProject[0].time) + 1;
+                setTotalToday(state => state++);
+              }
             } else {
               setIsLimitReached(true)
               handlePause(filteredProject[0].id)
@@ -207,6 +235,41 @@ const TimeTracker = () => {
     setTimeout(() => setIsLimitReached(false), 4000);
   }
 
+  const handleToggle = () => {
+    setOpen((prevOpen) => !prevOpen);
+  };
+
+  const handleClose = (event) => {
+    if (anchorRef.current && anchorRef.current.contains(event.target)) {
+      return;
+    }
+    setOpen(false);
+  };
+
+  const handleUserLogout = async() => {
+    const response = await handleLogout();
+    console.log(activeProjectId)
+    if (activeProjectId) {
+      await handlePause(activeProjectId);
+    }
+    if(response.data?.success) {
+      localStorage.removeItem('isRemember');
+      localStorage.removeItem('userId');
+      navigate("/");
+    } else {
+      setErrorMessage(response.data.error_message)
+    }
+  }
+
+  function handleListKeyDown(event) {
+    if (event.key === 'Tab') {
+      event.preventDefault();
+      setOpen(false);
+    } else if (event.key === 'Escape') {
+      setOpen(false);
+    }
+  }
+
   return (
     <Box sx={{ height: "fit-content" }}>
       <Grid
@@ -215,24 +278,37 @@ const TimeTracker = () => {
           display: "flex",
           justifyContent: "center",
           alignItems: "center",
-          // height: "100vh",
         }}
       >
         <Grid item lg={5} md={4} sm={12} xs={12}>
           <Paper
             className={classes.loginContainer}
-            style={{ boxShadow: "none" }}
+            style={{ boxShadow: "none", position: 'relative' }}
           >
-            <img
-              src={logo}
-              style={{
-                maxHeight: 30,
-                width: "162px",
-                marginBottom: "20px",
-                marginTop: "20px",
-              }}
-              alt="logo"
-            />
+              <div
+                ref={anchorRef}
+                style={{
+                  position: 'absolute',
+                  width: '100%',
+                  textAlign: 'right',
+                  top: 10,
+                  right: 10,
+                  cursor: 'pointer'
+                }}
+                onClick={handleToggle} 
+              >
+                <MenuIcon style={{position: 'absolute', top: 20, right: 20}} />
+              </div>
+              <img
+                src={logo}
+                style={{
+                  maxHeight: 30,
+                  width: "162px",
+                  marginBottom: "20px",
+                  marginTop: "20px",
+                }}
+                alt="logo"
+              />
             <Box sx={{ border: "1px solid #F2F3F7" }} />
             <Typography variant="h4" sx={{ marginTop: "32px", pointerEvents: "none" }}>
               {projectName}
@@ -344,6 +420,37 @@ const TimeTracker = () => {
           </Paper>
         </Grid>
       </Grid>
+      <Popper
+        open={open}
+        anchorEl={anchorRef.current}
+        role={undefined}
+        placement="bottom-start"
+        transition
+        disablePortal
+      >
+        {({ TransitionProps, placement }) => (
+          <Grow
+            {...TransitionProps}
+            style={{
+              transformOrigin:
+                placement === 'bottom-start' ? 'left top' : 'left bottom',
+            }}
+          >
+            <Paper>
+              <ClickAwayListener onClickAway={handleClose}>
+                <MenuList
+                  autoFocusItem={open}
+                  id="composition-menu"
+                  aria-labelledby="composition-button"
+                  onKeyDown={handleListKeyDown}
+                >
+                  <MenuItem onClick={handleUserLogout}>Logout</MenuItem>
+                </MenuList>
+              </ClickAwayListener>
+            </Paper>
+          </Grow>
+        )}
+      </Popper>
     </Box>
   );
 };
