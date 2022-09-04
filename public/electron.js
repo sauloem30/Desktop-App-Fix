@@ -93,29 +93,31 @@ app.whenReady().then(() => {
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
-app.on("window-all-closed", async() => {
-  if (process.platform !== "darwin") { 
-    const ProcessOut = async() => {
-      const {id , projectId, userId} = projectData
-      if(id && projectId && userId) {
-        const processData = async() => {
-          const obj = {
-            time_out: moment().utc(),
-            application_type : 'desktop-auto',
-            project_id: projectId,
-            user_id: userId,
-            id : id,
-          }
-          try {
-            await axios.post(`http://3.83.193.123/api/timelog/time_out`, obj);
-          }
-          catch (err) {
-            console.log(err)
-          }
-        }
-        await processData()
+
+const ProcessOut = async() => {
+  const {id , projectId, userId} = projectData
+  if(id && projectId && userId) {
+    const processData = async() => {
+      const obj = {
+        time_out: moment().utc(),
+        application_type : 'desktop-auto',
+        project_id: projectId,
+        user_id: userId,
+        id : id,
+      }
+      try {
+        await axios.post(`http://localhost:3000/api/timelog/time_out`, obj);
+      }
+      catch (err) {
+        console.log(err)
       }
     }
+    await processData()
+  }
+}
+
+app.on("window-all-closed", async() => {
+  if (process.platform !== "darwin") { 
     await ProcessOut();
     app.quit();
   }

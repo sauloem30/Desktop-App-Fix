@@ -11,7 +11,7 @@ export const getProjects = async (userId) => {
   }
 };
 
-export const handleUpdateTimeLog = async (project , activeId, userId, isMidnight = true) => {
+export const handleUpdateTimeLog = async (project , activeId, userId, isMidnight = false) => {
   const { id } = project;
   // handlePause(id);
   const obj = {

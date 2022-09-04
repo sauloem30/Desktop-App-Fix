@@ -20,6 +20,7 @@ import Popper from '@mui/material/Popper';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import { useNavigate } from "react-router-dom";
+import { useIdleTimer } from "react-idle-timer"
 
 let interval;
 const TimeTracker = () => {
@@ -84,6 +85,10 @@ const TimeTracker = () => {
       setIsLimitReached(false);
       const returned_data = await handlePostTimeLog(id, userId);
       if(returned_data.data?.success) {
+        // activate idle timer
+        start()
+        activate()
+
         setCurrentTimer(0)
         setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
         setActiveTimelogId(returned_data.data.id)
@@ -147,6 +152,7 @@ const TimeTracker = () => {
       setActiveProjectId(false);
       const response = await handleUpdateTimeLog( ...project, activeTimelogId, userId )
       if(response.data?.success) {
+        pause();
         clearInterval(interval)
         window.electronApi.send('paused');
       } else {
@@ -269,6 +275,50 @@ const TimeTracker = () => {
       setOpen(false);
     }
   }
+  const onIdle = () => {
+    handlePause(activeProjectId)
+    setErrorMessage("You have been idle for 20 minutes and were logged out automatically.")
+  }
+
+  const onActive = (event) => {
+    alert('activated')
+  }
+
+  const {
+    start,
+    activate,
+    pause,
+  } = useIdleTimer({
+    onIdle,
+    onActive,
+    timeout: 1000 * 60 * 20,
+    promptTimeout: 0,
+    events: [
+      'mousemove',
+      'keydown',
+      'wheel',
+      'DOMMouseScroll',
+      'mousewheel',
+      'mousedown',
+      'touchstart',
+      'touchmove',
+      'MSPointerDown',
+      'MSPointerMove',
+      'visibilitychange'
+    ],
+    immediateEvents: [],
+    debounce: 0,
+    throttle: 0,
+    eventsThrottle: 200,
+    element: document,
+    startOnMount: false,
+    startManually: true,
+    stopOnIdle: true,
+    crossTab: false,
+    name: 'idle-timer',
+    syncTimers: 0,
+    leaderElection: false
+  })
 
   return (
     <Box sx={{ height: "fit-content" }}>
