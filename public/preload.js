@@ -14,6 +14,8 @@ ipcRenderer.on('asynchronous-message', (evt, data) => {
     }
     localdata.push(data)
     localStorage.setItem("screenshot", JSON.stringify(localdata));
-})
+});
 
-
+ipcRenderer.on('auto-out', (evt, data) => {
+    localStorage.setItem("autoLoad", JSON.stringify({is_auto: true}))
+});

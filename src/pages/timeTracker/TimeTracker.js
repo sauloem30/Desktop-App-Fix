@@ -20,7 +20,6 @@ import Popper from '@mui/material/Popper';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import { useNavigate } from "react-router-dom";
-import { useIdleTimer } from "react-idle-timer"
 
 let interval;
 const TimeTracker = () => {
@@ -42,157 +41,6 @@ const TimeTracker = () => {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef(null);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    window.electronApi.send("paused")
-    const user = localStorage.getItem("userId")
-
-    getProjectData()
-    setUserId(parseInt(user))
-    setErrorMessage('')
-  }, []);
-
-  async function getProjectData() {
-    const user = localStorage.getItem("userId")
-
-    const res = await getProjects(user)
-    const { result } = res
-    if(res.err_msg?.length === 0) {
-      setProjects(result);
-      let totalTime = 0
-
-      result.map(project => totalTime += parseInt(project.time) / 60);
-      setTotalToday(totalTime * 60);
-    } else {
-      setErrorMessage("Error loading projects")
-    }
-  }
-
-  const handleProjectStart = async (project) => {
-    setErrorMessage('')
-    const userId = parseInt(localStorage.getItem("userId"))
-    if(isLoading === false) {
-      // Log out first if clocked in to another project
-      if(project.id !== activeProjectId && activeProjectId !== false) {
-        const response = await handleUpdateTimeLog( activeProjectId, activeTimelogId, userId )
-        if(response.data?.error_message.length > 0) {
-          setErrorMessage(response.data.error_message)
-        }
-      }
-
-      setIsLoading(true)
-      const { id, name, daily_limit_by_minute } = project;
-      setIsLimitReached(false);
-      const returned_data = await handlePostTimeLog(id, userId);
-      if(returned_data.data?.success) {
-        // activate idle timer
-        start()
-        activate()
-
-        setCurrentTimer(0)
-        setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
-        setActiveTimelogId(returned_data.data.id)
-        document.title = `${name}-Thriveva`
-        setActiveProjectId(id);
-        localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
-        setProjectName(name);
-        clearInterval(interval);
-        window.electronApi.send("paused")
-        window.electronApi.send("project-started");
-        let filteredProject = projects.filter((item, i) => item.id === id);
-        if (filteredProject) {
-          setCurrentTimer(state => state += parseInt(filteredProject[0].time));
-          interval = setInterval(async() => {
-            if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
-              // handle auto out when midnight is reached
-              if (moment().format("Hms") === "000") {
-                const response = await handleUpdateTimeLog( id, returned_data.data.id, userId, true )
-                if(response.data?.error_message.length > 0) {
-                  setErrorMessage(response.data.error_message)
-                }
-
-                setCurrentTimer(0);
-                setTotalToday(0);
-                // Update limit here
-                await getProjectData()
-                await handlePostTimeLog(id, userId, true);
-                
-              } else {
-                setTotalToday(state => state += 1)
-                setCurrentTimer(state => state += 1 );
-                filteredProject[0].time = parseInt(filteredProject[0].time) + 1;
-                setTotalToday(state => state++);
-              }
-            } else {
-              setIsLimitReached(true)
-              handlePause(filteredProject[0].id)
-            }
-          }, 1000)
-        } else {
-          return null;
-        }
-      } else {
-        setErrorMessage(returned_data.data.error_message)
-      }
-
-      setIsLoading(false)
-    }
-  };
-
-  const handlePause = async(projectId) => {
-    setErrorMessage('')
-    setCurrentTimer(0)
-    setDailyLimit("No Daily Limit")
-    document.title = "Thriveva"
-    setProjectName("Select a project")
-    clearInterval(interval)
-    localStorage.setItem('projectData', JSON.stringify([]))
-    let project = projects.filter((item) => item.id === projectId);
-    if (project) {
-      setActiveProjectId(false);
-      const response = await handleUpdateTimeLog( ...project, activeTimelogId, userId )
-      if(response.data?.success) {
-        pause();
-        clearInterval(interval)
-        window.electronApi.send('paused');
-      } else {
-        setErrorMessage(response.data.error_message)
-        clearInterval(interval)
-        window.electronApi.send('paused');
-      }
-    }
-  };
-
-  useEffect(() => {
-    if(!isClearScreenshots && activeProjectId) {
-      let data = []
-      if (noEvents < 6) {
-        if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
-          data = JSON.parse(localStorage.getItem('screenshot'));
-          let newArr = data.map(val => {
-            if (val.keyboard === 0 && val.mouse === 0) {
-              setNoEvents(state => state + 1)
-            } else {
-              setNoEvents(0)
-            }
-            if (val.loggedTime) {
-              return { ...val }
-            } else {
-              return {
-                ...val,
-                generated_at: moment().utc(),
-                project_id: activeProjectId
-              }
-            }
-          })
-          postSsData(newArr);
-        }
-      } else {
-        handlePause(activeProjectId);
-      }
-    }
-
-  }, [localStorage.getItem('screenshot'), isClearScreenshots])
 
   const postSsData = (newArr) => {
     let failedSs = []
@@ -236,6 +84,177 @@ const TimeTracker = () => {
     }
   }
 
+  async function getProjectData() {
+    const user = localStorage.getItem("userId")
+
+    const res = await getProjects(user)
+    const { result } = res
+    if(res.err_msg?.length === 0) {
+      setProjects(result);
+      let totalTime = 0
+
+      result.map(project => totalTime += parseInt(project.time) / 60);
+      setTotalToday(totalTime * 60);
+    } else {
+      setErrorMessage("Error loading projects")
+    }
+  }
+
+  const handleProjectStart = async (project) => {
+    setErrorMessage('')
+    const userId = parseInt(localStorage.getItem("userId"))
+    if(isLoading === false) {
+      // Log out first if clocked in to another project
+      if(project.id !== activeProjectId && activeProjectId !== false) {
+        const response = await handleUpdateTimeLog( activeProjectId, activeTimelogId, userId )
+        if(response.data?.error_message.length > 0) {
+          setErrorMessage(response.data.error_message)
+        }
+      }
+
+      setIsLoading(true)
+      const { id, name, daily_limit_by_minute } = project;
+      setIsLimitReached(false);
+      const returned_data = await handlePostTimeLog(id, userId);
+      if(returned_data.data?.success) {
+        // activate idle timer
+        setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
+        setActiveTimelogId(returned_data.data.id)
+        document.title = `${name}-Thriveva`
+        setActiveProjectId(id);
+        localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
+        setProjectName(name);
+        clearInterval(interval);
+        window.electronApi.send("paused")
+        window.electronApi.send("project-started");
+        let filteredProject = projects.filter((item, i) => item.id === id);
+        if (filteredProject) {
+          setCurrentTimer(state => state += parseInt(filteredProject[0].time));
+          returned_data.data.start_time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+          let subtotalToday = totalToday
+          let filteredProjectTimeTotal = parseInt(filteredProject[0].time)
+          interval = setInterval(async() => {
+            if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
+              // handle auto out when midnight is reached
+              if (moment().format("Hms") === "000") {
+                const response = await handleUpdateTimeLog( id, returned_data.data.id, userId, true )
+                if(response.data?.error_message.length > 0) {
+                  setErrorMessage(response.data.error_message)
+                }
+
+                setCurrentTimer(0);
+                setTotalToday(0);
+                subtotalToday = 0;
+
+                filteredProjectTimeTotal = 0;
+                // Update limit here
+                await getProjectData()
+                await handleProjectStart({ id, name, daily_limit_by_minute });
+                
+              } else {
+                // get total today
+                const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+                const timeDiff = moment(timeNow).diff(returned_data.data.start_time, 'seconds')
+
+                setCurrentTimer(filteredProjectTimeTotal + timeDiff)
+                setTotalToday(subtotalToday + timeDiff)
+                filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
+              }
+            } else {
+              setIsLimitReached(true)
+              handlePause(filteredProject[0].id)
+            }
+          }, 1000)
+        } else {
+          return null;
+        }
+      } else {
+        setErrorMessage(returned_data.data.error_message)
+      }
+
+      setIsLoading(false)
+    }
+  };
+
+  const handlePause = async(projectId, isMidnight = false, isIdle = false) => {
+    setErrorMessage('')
+    setCurrentTimer(0)
+    setDailyLimit("No Daily Limit")
+    document.title = "Thriveva"
+    setProjectName("Select a project")
+    clearInterval(interval)
+    localStorage.setItem('projectData', JSON.stringify([]))
+    let project = projects.filter((item) => item.id === projectId);
+    if (project) {
+      setActiveProjectId(false);
+      const response = await handleUpdateTimeLog( ...project, activeTimelogId, userId, isMidnight, isIdle )
+      if(response.data?.success) {
+        clearInterval(interval)
+        window.electronApi.send('paused');
+      } else {
+        setErrorMessage(response.data.error_message)
+        clearInterval(interval)
+        window.electronApi.send('paused');
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.electronApi.send("paused")
+    const user = localStorage.getItem("userId")
+
+    getProjectData()
+    setUserId(parseInt(user))
+    setErrorMessage('')
+  }, []);
+
+  useEffect(() => {
+    if(!isClearScreenshots && activeProjectId) {
+      let data = []
+      if (noEvents < 6) {
+        if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
+          data = JSON.parse(localStorage.getItem('screenshot'));
+          let newArr = data.map(val => {
+            if (val.keyboard === 0 && val.mouse === 0) {
+              setNoEvents(state => state + 1)
+            } else {
+              setNoEvents(0)
+            }
+            if (val.loggedTime) {
+              return { ...val }
+            } else {
+              return {
+                ...val,
+                generated_at: moment().utc(),
+                project_id: activeProjectId
+              }
+            }
+          })
+          postSsData(newArr);
+        }
+      } else {
+        handlePause(activeProjectId);
+      }
+    }
+
+  }, [localStorage.getItem('screenshot'), isClearScreenshots])
+
+  useEffect(() => {
+    const auto = async () => {
+      const isLogout = JSON.parse(localStorage.getItem('autoLoad'));
+      if(isLogout && isLogout.is_auto) {
+        if(userId !== null) {
+          localStorage.removeItem('autoLoad');
+          await handlePause(activeProjectId, false, true);
+          setErrorMessage('The system detected that you have been idle for more than 20 minutes. You were automatically logged out');
+          // reload data
+          await getProjectData();
+        }
+      }
+    }
+    auto();
+  }, [localStorage.getItem('autoLoad')])
+
   const handleLimitReached = () => {
     setIsLimitReached(true)
     setTimeout(() => setIsLimitReached(false), 4000);
@@ -254,7 +273,6 @@ const TimeTracker = () => {
 
   const handleUserLogout = async() => {
     const response = await handleLogout();
-    console.log(activeProjectId)
     if (activeProjectId) {
       await handlePause(activeProjectId);
     }
@@ -275,50 +293,6 @@ const TimeTracker = () => {
       setOpen(false);
     }
   }
-  const onIdle = () => {
-    handlePause(activeProjectId)
-    setErrorMessage("You have been idle for 20 minutes and were logged out automatically.")
-  }
-
-  const onActive = (event) => {
-    alert('activated')
-  }
-
-  const {
-    start,
-    activate,
-    pause,
-  } = useIdleTimer({
-    onIdle,
-    onActive,
-    timeout: 1000 * 60 * 20,
-    promptTimeout: 0,
-    events: [
-      'mousemove',
-      'keydown',
-      'wheel',
-      'DOMMouseScroll',
-      'mousewheel',
-      'mousedown',
-      'touchstart',
-      'touchmove',
-      'MSPointerDown',
-      'MSPointerMove',
-      'visibilitychange'
-    ],
-    immediateEvents: [],
-    debounce: 0,
-    throttle: 0,
-    eventsThrottle: 200,
-    element: document,
-    startOnMount: false,
-    startManually: true,
-    stopOnIdle: true,
-    crossTab: false,
-    name: 'idle-timer',
-    syncTimers: 0,
-    leaderElection: false
-  })
 
   return (
     <Box sx={{ height: "fit-content" }}>

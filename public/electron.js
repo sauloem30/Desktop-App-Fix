@@ -18,7 +18,8 @@ const {
   BrowserWindow,
   ipcMain,
   desktopCapturer,
-  globalShortcut
+  globalShortcut,
+  powerMonitor
 } = require("electron");
 const isDev = require("electron-is-dev");
 const { uIOhook } = require("uiohook-napi");
@@ -138,7 +139,7 @@ function getRandomInt(min, max) {
 
 // getting events from src 
 
-ipcMain.on("paused", async (event, data) => {
+const handlePause = () => {
   keyboard = 0;
   mouse = 0;
   uIOhook.stop()
@@ -147,6 +148,10 @@ ipcMain.on("paused", async (event, data) => {
   clearTimeout(CaptureTimeout);
   clearInterval(CaptureMouseActivity);
 
+}
+
+ipcMain.on("paused", async (event, data) => {
+  handlePause();
 });
 
 ipcMain.on("quiteApp", async (event, data) => {
@@ -158,22 +163,27 @@ ipcMain.on("quiteApp", async (event, data) => {
 
 ipcMain.on("project-started", async (event, data) => {
   uIOhook.start()
+
   CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000))
-  CaptureMouseActivity = setInterval(
-    () => {
-      if(hasMouseActivity && hasKeyboardActivity) {
-        mouse++
-        hasMouseActivity = false
-        hasKeyboardActivity = false
-      } else if(hasMouseActivity) {
-        mouse++
-        hasMouseActivity = false
-      } else if (hasKeyboardActivity) {
-        keyboard++
-        hasKeyboardActivity = false
-      }
+  CaptureMouseActivity = setInterval(() => {
+    if(powerMonitor.getSystemIdleTime() === 1200) {
+      win.webContents.send('auto-out');
     }
-  , 1000)
+
+    if(hasMouseActivity && hasKeyboardActivity) { 
+      mouse++
+      hasMouseActivity = false
+      hasKeyboardActivity = false
+    } else if(hasMouseActivity) {
+      mouse++
+      hasMouseActivity = false
+    } else if (hasKeyboardActivity) {
+      keyboard++ 
+      hasKeyboardActivity = false
+    }
+  }
+  , 1000);
+  
   CaptureSSinterval = setInterval(
     () => {     
       CaptureTimeout = setTimeout(() => {
@@ -238,7 +248,7 @@ captureFunction = () => {
 
         setTimeout(() => {
           // create directory when missing 
-          var dir = path.resolve('c:/images/screenshots');
+          const dir = path.resolve('c:/images/screenshots');
           if (!fs.existsSync(dir)){
             fs.mkdirSync(dir, { recursive: true });
           }
@@ -270,6 +280,8 @@ captureFunction = () => {
                 const image = source.thumbnail.toDataURL();
                 source.name == "Screen 1" ? win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds: keyboard, mouse_activities_seconds: mouse, user_id: projectData.userId }) :
                   win.webContents.send('asynchronous-message', { image, keyboard_activities_seconds: keyboard, mouse_activities_seconds: mouse, second_screenshot: true, user_id: projectData.userId  });
+                keyboard = 0;
+                mouse = 0;
               }
               setTimeout(() => {
                 windowCap.close();

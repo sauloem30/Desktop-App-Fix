@@ -11,7 +11,7 @@ export const getProjects = async (userId) => {
   }
 };
 
-export const handleUpdateTimeLog = async (project , activeId, userId, isMidnight = false) => {
+export const handleUpdateTimeLog = async (project , activeId, userId, isMidnight = false, isIdle = false) => {
   const { id } = project;
   // handlePause(id);
   const obj = {
@@ -22,6 +22,7 @@ export const handleUpdateTimeLog = async (project , activeId, userId, isMidnight
     user_id: userId,
     offset: moment().utcOffset(),
     is_transition: isMidnight,
+    is_system: isIdle, //to make the request params less readable
   }
   try {
     const response = await axiosInstance.post(`/timelog/time_out`, obj);
