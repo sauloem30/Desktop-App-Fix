@@ -34,7 +34,7 @@
   "main": "public/electron.js",
   "homepage": "./",
   "description": "time tracker app",
-  "proxy": "http://3.83.193.123",
+  "proxy": "http://localhost:4301",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.9.0",

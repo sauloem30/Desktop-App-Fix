@@ -107,7 +107,7 @@ const ProcessOut = async() => {
         id : id,
       }
       try {
-        await axios.post(`http://localhost:3000/api/timelog/time_out`, obj);
+        await axios.post(`http://3.83.193.123/api/timelog/time_out`, obj);
       }
       catch (err) {
         console.log(err)
