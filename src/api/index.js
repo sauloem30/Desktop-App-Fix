@@ -3,7 +3,7 @@ import axiosInstance from "../utils/axios-instance";
 
 export const getProjects = async (userId) => {
   try {
-    const response = await axiosInstance.get(`${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active?user_id=${userId}`)
+    const response = await axiosInstance.get(`${process.env.REACT_APP_API_BASE_URL}/projects/lookup/active?user_id=${userId}&offset=${moment().utcOffset()}`)
     return response.data
   } catch (err) {
     // handle errors here

@@ -27,6 +27,7 @@ const TimeTracker = () => {
   const [projects, setProjects] = useState([]);
   const [activeProjectId, setActiveProjectId] = useState(false); //should be numeric but to make it faster, will retain false for the meantime
   const [isLoading, setIsLoading] = useState(false);
+  const [isReloadApp, setIsReloadApp] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
   const [projectName, setProjectName] = useState('Select a project');
   const [errorMessage, setErrorMessage] = useState('');
@@ -95,12 +96,13 @@ const TimeTracker = () => {
 
       result.map(project => totalTime += parseInt(project.time) / 60);
       setTotalToday(totalTime * 60);
+      return result
     } else {
       setErrorMessage("Error loading projects")
     }
   }
 
-  const handleProjectStart = async (project) => {
+  const handleProjectStart = async (project, isMidnight) => {
     setErrorMessage('')
     const userId = parseInt(localStorage.getItem("userId"))
     if(isLoading === false) {
@@ -115,7 +117,7 @@ const TimeTracker = () => {
       setIsLoading(true)
       const { id, name, daily_limit_by_minute } = project;
       setIsLimitReached(false);
-      const returned_data = await handlePostTimeLog(id, userId);
+      const returned_data = await handlePostTimeLog(id, userId, isMidnight);
       if(returned_data.data?.success) {
         // activate idle timer
         setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
@@ -130,36 +132,24 @@ const TimeTracker = () => {
         let filteredProject = projects.filter((item, i) => item.id === id);
         if (filteredProject) {
           setCurrentTimer(state => state += parseInt(filteredProject[0].time));
-          returned_data.data.start_time = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+          const startTime = moment().utc().format('YYYY-MM-DD HH:mm:ss')
           let subtotalToday = totalToday
           let filteredProjectTimeTotal = parseInt(filteredProject[0].time)
-          interval = setInterval(async() => {
-            if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
-              // handle auto out when midnight is reached
-              if (moment().format("Hms") === "000") {
-                const response = await handleUpdateTimeLog( id, returned_data.data.id, userId, true )
-                if(response.data?.error_message.length > 0) {
-                  setErrorMessage(response.data.error_message)
-                }
-
-                setCurrentTimer(0);
-                setTotalToday(0);
-                subtotalToday = 0;
-
-                filteredProjectTimeTotal = 0;
-                // Update limit here
-                await getProjectData()
-                await handleProjectStart({ id, name, daily_limit_by_minute });
-                
-              } else {
-                // get total today
-                const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss')
-                const timeDiff = moment(timeNow).diff(returned_data.data.start_time, 'seconds')
-
-                setCurrentTimer(filteredProjectTimeTotal + timeDiff)
-                setTotalToday(subtotalToday + timeDiff)
-                filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
-              }
+          interval = setInterval(() => {
+            // handle auto out when midnight is reached
+            if (moment().format("Hms") === "000") {
+              setTotalToday(0)
+              filteredProject[0].time = 0;
+              subtotalToday = 0;
+              filteredProjectTimeTotal = 0;
+              setIsReloadApp(true);
+            } else if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
+              // get total today
+              const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss')
+              const timeDiff = moment(timeNow).diff(startTime, 'seconds')
+              setCurrentTimer(filteredProjectTimeTotal + timeDiff)
+              setTotalToday(subtotalToday + timeDiff)
+              filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
             } else {
               setIsLimitReached(true)
               handlePause(filteredProject[0].id)
@@ -176,18 +166,19 @@ const TimeTracker = () => {
     }
   };
 
-  const handlePause = async(projectId, isMidnight = false, isIdle = false) => {
+  const handlePause = async(projectId, timelogId, isMidnight = false, isIdle = false ) => {
     setErrorMessage('')
     setCurrentTimer(0)
     setDailyLimit("No Daily Limit")
     document.title = "Thriveva"
     setProjectName("Select a project")
+
     clearInterval(interval)
     localStorage.setItem('projectData', JSON.stringify([]))
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      const response = await handleUpdateTimeLog( ...project, activeTimelogId, userId, isMidnight, isIdle )
+      const response = await handleUpdateTimeLog( ...project, timelogId || activeTimelogId, userId, isMidnight, isIdle )
       if(response.data?.success) {
         clearInterval(interval)
         window.electronApi.send('paused');
@@ -197,7 +188,24 @@ const TimeTracker = () => {
         window.electronApi.send('paused');
       }
     }
+
+    if (isMidnight) {
+      setTimeout(async() => {
+        setCurrentTimer(0);
+        setTotalToday(0);
+        // Update limit here
+        const projectData = await getProjectData();
+        const newProjectData = projectData.filter((item, i) => item.id === projectId);
+        await handleProjectStart({ id: projectId, name: newProjectData[0].name, daily_limit_by_minute: newProjectData[0].daily_limit_by_minute}, true);
+      }, 1000);}
   };
+
+  useEffect(() => {
+    if(isReloadApp) {
+      handlePause(activeProjectId, activeTimelogId, true);
+      setIsReloadApp(false);
+    }
+  }, [isReloadApp])
 
   useEffect(() => {
     window.electronApi.send("paused")
