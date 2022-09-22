@@ -253,7 +253,7 @@ const TimeTracker = () => {
       if(isLogout && isLogout.is_auto) {
         if(userId !== null) {
           localStorage.removeItem('autoLoad');
-          await handlePause(activeProjectId, false, true);
+          await handlePause(activeProjectId, activeTimelogId, false, true);
           setErrorMessage('The system detected that you have been idle for more than 20 minutes. You were automatically logged out');
           // reload data
           await getProjectData();
