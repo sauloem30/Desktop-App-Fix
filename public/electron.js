@@ -54,10 +54,11 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: true,
       preload: path.join(__dirname, "./preload.js"),
+      backgroundThrottling: false,
     },
     show: false
   });
-
+  win.webContents.setBackgroundThrottling(false)
   win.removeMenu()
 
   // and load the index.html of the app.
