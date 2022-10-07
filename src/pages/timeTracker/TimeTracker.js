@@ -122,7 +122,7 @@ const TimeTracker = () => {
         // activate idle timer
         setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
         setActiveTimelogId(returned_data.data.id)
-        document.title = `${name}-Thriveva`
+        document.title = `${name}-Thriveva v1.5.4`
         setActiveProjectId(id);
         localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
         setProjectName(name);
@@ -170,7 +170,7 @@ const TimeTracker = () => {
     setErrorMessage('')
     setCurrentTimer(0)
     setDailyLimit("No Daily Limit")
-    document.title = "Thriveva"
+    document.title = "Thriveva v1.5.4"
     setProjectName("Select a project")
 
     clearInterval(interval)
