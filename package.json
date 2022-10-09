@@ -1,7 +1,7 @@
 {
   "name": "thriveva-desktop-app",
-  "author": "ZestGeek",
-  "version": "0.1.0",
+  "author": "IT OUTSOURCE PH",
+  "version": "1.5.5",
   "build": {
     "appId": "com.thriveva_timeTracker",
     "mac": {
@@ -32,7 +32,7 @@
     "target": "deb"
   },
   "main": "public/electron.js",
-  "homepage": "./",
+  "homepage": "https://www.thriveva.com/",
   "description": "time tracker app",
   "proxy": "http://localhost:4301",
   "private": true,
@@ -46,6 +46,7 @@
     "@testing-library/jest-dom": "^5.16.4",
     "@testing-library/react": "^13.3.0",
     "axios": "^0.27.2",
+    "electron-download-manager": "^2.1.2",
     "electron-is-dev": "^2.0.0",
     "electron-store": "^8.0.2",
     "fs-extra": "^10.1.0",

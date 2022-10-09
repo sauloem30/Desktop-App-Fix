@@ -7,6 +7,8 @@ const moment  = require('moment');
 const electron = require('electron');
 const screenElectron = electron.screen;
 const { dialog } = require('electron')
+const DownloadManager = require("electron-download-manager");
+const child = require('child_process').execFile;
 
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
@@ -21,10 +23,17 @@ const {
   globalShortcut,
   powerMonitor
 } = require("electron");
+
 const isDev = require("electron-is-dev");
 const { uIOhook } = require("uiohook-napi");
 let hasMouseActivity = false
 let hasKeyboardActivity = false
+
+let host  = "http://3.83.193.123"
+
+DownloadManager.register({
+  downloadFolder: app.getPath("downloads") + "/installer"
+});
 
 const schema = {
   defaultKeyCombination: {
@@ -37,6 +46,39 @@ const store = new Storage({ schema })
 let win = null;
 let splash;
 let projectData = []
+
+
+const checkUpdate = async() => {
+  let isUpdate = false
+  // call for update here
+  const response = await axios(`${host}/api/downloads/get_app_version`);
+
+  if(response.data) {
+    isUpdate = response.data.version !== app.getVersion()
+  }
+  return isUpdate
+  // 
+}
+
+const downloadAndInstall = async() => {
+  DownloadManager.download({
+    url: `${host}/api/downloads/desktop`
+  }, function (error, info) {
+      if (error) {
+        console.log(error);
+        return;
+      } else {
+        console.log("DONE: " + info.url);
+        const executablePath = app.getPath("downloads") + "\\installer" + "\\ThriveVA.exe"
+        child(executablePath.replace(/\\/g, "\\\\"), function(err, data) {
+          if(err){
+            console.error(err);
+            return;
+          }
+        });
+      }
+  });
+}
 
 function createWindow() {
   // Create the browser window.
@@ -59,6 +101,13 @@ function createWindow() {
     show: false
   });
   win.webContents.setBackgroundThrottling(false)
+
+  win.webContents
+    .executeJavaScript(`localStorage.setItem("version", "${app.getVersion()}");`)
+
+  win.webContents
+    .executeJavaScript(`document.title="ThriveVA ${app.getVersion()}";`)
+
   win.removeMenu()
 
   // and load the index.html of the app.
@@ -72,6 +121,31 @@ function createWindow() {
   win.once('ready-to-show', () => {
     splash.destroy();
     win.show();
+
+    if(isDev) {
+      host = "http://localhost:4301"
+    }
+
+    setTimeout(async() => {
+      // handle Update check here
+      const isUpdate = await checkUpdate()
+    
+      if(isUpdate) {
+        let options  = {
+          buttons: ["Yes","No"],
+          title: "Update Available",
+          message: "Update is available. Would you like to download the latest update?"
+        }
+      
+        dialog.showMessageBox(null, options).then(async(result) => {
+          if (result.response === 0) {
+            await downloadAndInstall()
+          } else {
+            loadAppWindow()
+          }
+        })
+      }
+      }, 3000)
   });
 
   // Open the DevTools.
@@ -108,7 +182,7 @@ const ProcessOut = async() => {
         id : id,
       }
       try {
-        await axios.post(`http://3.83.193.123/api/timelog/time_out`, obj);
+        await axios.post(`${host}/api/timelog/time_out`, obj);
       }
       catch (err) {
         console.log(err)
