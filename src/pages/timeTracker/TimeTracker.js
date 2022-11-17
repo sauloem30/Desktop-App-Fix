@@ -8,7 +8,7 @@ import Paper from "@mui/material/Paper";
 import Typography from "@mui/material/Typography";
 import moment from "moment";
 import React, { useEffect, useState, useRef } from "react";
-import { getProjects, handlePostTimeLog, handleUpdateTimeLog, handleLogout } from "../../api";
+import { getProjects, handlePostTimeLog, handleUpdateTimeLog, handleLogout, getLatestLogin } from "../../api";
 import { PauseIcon, StartIcon, MenuIcon } from "../../assests/icons/SvgIcons";
 import logo from "../../assests/images/app-logo.png";
 import axiosInstance from "../../utils/axios-instance";
@@ -21,7 +21,12 @@ import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import { useNavigate } from "react-router-dom";
 
+import { io } from "socket.io-client";
+
+const socket = io('http://3.83.193.123')//io("http://localhost:3000");
+
 let interval;
+let updater;
 const TimeTracker = () => {
   const classes = useStyles();
   const [projects, setProjects] = useState([]);
@@ -40,6 +45,7 @@ const TimeTracker = () => {
   const [isClearScreenshots, setIsClearScreenshots] = useState(false);
   const [userId, setUserId] = useState(0);
   const [open, setOpen] = useState(false);
+  const [isLoadAuto, setIsLoadAuto] = useState(false);
   
   const anchorRef = useRef(null);
   const navigate = useNavigate();
@@ -87,7 +93,7 @@ const TimeTracker = () => {
     }
   }
 
-  async function getProjectData() {
+  const getProjectData = async() => {
     const user = localStorage.getItem("userId")
 
     const res = await getProjects(user)
@@ -104,7 +110,7 @@ const TimeTracker = () => {
     }
   }
 
-  const handleProjectStart = async (project, isMidnight) => {
+  const handleProjectStart = async (project, isMidnight, isResumeLog=false, resumeLogId=null) => {
     setErrorMessage('')
     const userId = parseInt(localStorage.getItem("userId"))
     if(isLoading === false) {
@@ -119,7 +125,7 @@ const TimeTracker = () => {
       setIsLoading(true)
       const { id, name, daily_limit_by_minute } = project;
       setIsLimitReached(false);
-      const returned_data = await handlePostTimeLog(id, userId, isMidnight);
+      const returned_data = await handlePostTimeLog(id, userId, isMidnight, isResumeLog, resumeLogId);
       if(returned_data.data?.success) {
         // activate idle timer
         setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
@@ -129,10 +135,12 @@ const TimeTracker = () => {
         localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
         setProjectName(name);
         clearInterval(interval);
+        clearInterval(updater);
         window.electronApi.send("paused")
         window.electronApi.send("project-started");
         let filteredProject = projects.filter((item, i) => item.id === id);
         if (filteredProject) {
+          filteredProject[0].time = returned_data.data.project_data[0].time;
           setCurrentTimer(state => state += parseInt(filteredProject[0].time));
           const startTime = moment().utc().format('YYYY-MM-DD HH:mm:ss')
           let subtotalToday = totalToday
@@ -157,6 +165,13 @@ const TimeTracker = () => {
               handlePause(filteredProject[0].id)
             }
           }, 1000)
+
+          updater = setInterval(() => {
+            socket.emit('update', {user_id: userId, id: returned_data.data.id});
+          }, 5000)
+
+          // handle Socket Connection
+          socket.emit('register', {test: 'this is a test room to register'});
         } else {
           return null;
         }
@@ -184,6 +199,7 @@ const TimeTracker = () => {
       if(response.data?.success) {
         clearInterval(interval)
         window.electronApi.send('paused');
+        socket.emit('unregister', {hmmm: 'This is a test'})
       } else {
         setErrorMessage(response.data.error_message)
         clearInterval(interval)
@@ -207,19 +223,30 @@ const TimeTracker = () => {
 
   useEffect(() => {
     if(isReloadApp) {
-      handlePause(activeProjectId, activeTimelogId, true);
+      handleProjectStart(activeProjectId, activeTimelogId, true);
       setIsReloadApp(false);
     }
   }, [isReloadApp])
 
   useEffect(() => {
-    window.electronApi.send("paused")
-    const user = localStorage.getItem("userId")
-
-    getProjectData()
-    setUserId(parseInt(user))
-    setErrorMessage('')
+    const initialLoad = async() => {
+      window.electronApi.send("paused")
+      const user = localStorage.getItem("userId")
+  
+      await getProjectData();
+      setUserId(parseInt(user));
+      setErrorMessage('');
+      setIsLoadAuto(true);
+    }
+    initialLoad()
   }, []);
+
+  useEffect(() => {
+    if(isLoadAuto) {
+      const user = localStorage.getItem("userId")
+      handleAutoClockIn(user)
+    }
+  }, [isLoadAuto])
 
   useEffect(() => {
     if(!isClearScreenshots && activeProjectId) {
@@ -298,12 +325,32 @@ const TimeTracker = () => {
     }
   }
 
-  function handleListKeyDown(event) {
+  const handleListKeyDown = (event) => {
     if (event.key === 'Tab') {
       event.preventDefault();
       setOpen(false);
     } else if (event.key === 'Escape') {
       setOpen(false);
+    }
+  }
+
+  const handleAutoClockIn = async(user) => {
+    const record = await getLatestLogin(user)
+    try {
+      if(record.err_msg.length === 0 && record.data.length > 0) {
+        // handleAutoClockin Here
+        await handleProjectStart(
+          {
+            id: record.data[0].project_id,
+            name: record.data[0].name,
+            daily_limit_by_minute: record.data[0].daily_limit_by_minute,
+          }, false, true, record.data[0].id
+        )
+      } else {
+        setErrorMessage(record.err_msg)
+      }
+    } catch (error) {
+      console.log(error)
     }
   }
 
