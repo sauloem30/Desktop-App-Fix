@@ -46,6 +46,7 @@ const store = new Storage({ schema })
 let win = null;
 let splash;
 let projectData = []
+let downloader;
 
 
 const checkUpdate = async() => {
@@ -74,6 +75,8 @@ const downloadAndInstall = async() => {
           if(err){
             console.error(err);
             return;
+          } else {
+            downloader.destroy();
           }
         });
       }
@@ -121,31 +124,6 @@ function createWindow() {
   win.once('ready-to-show', () => {
     splash.destroy();
     win.show();
-
-    if(isDev) {
-      host = "http://localhost:4301"
-    }
-
-    setTimeout(async() => {
-      // handle Update check here
-      const isUpdate = await checkUpdate()
-    
-      if(isUpdate) {
-        let options  = {
-          buttons: ["Yes","No"],
-          title: "Update Available",
-          message: "Update is available. Would you like to download the latest update?"
-        }
-      
-        dialog.showMessageBox(null, options).then(async(result) => {
-          if (result.response === 0) {
-            await downloadAndInstall()
-          } else {
-            loadAppWindow()
-          }
-        })
-      }
-      }, 3000)
   });
 
   // Open the DevTools.
@@ -157,13 +135,23 @@ function createWindow() {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.whenReady().then(() => {
-  splash = new BrowserWindow({ width: 810, height: 610, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
-  splash.loadURL(`file://${__dirname}/splash.html`);
-
-  createWindow()
-  globalShortcut.register('CommandOrControl+R', () => { })
-  globalShortcut.register('F5', () => { })
+app.whenReady().then(async() => {
+  if(isDev) {
+    host = "http://localhost:4301"
+  }
+  const isUpdate = await checkUpdate()
+  
+  if(isUpdate) {
+    downloader = new BrowserWindow({ width: 450, height: 200, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
+    downloader.loadURL(`file://${__dirname}/download.html`);
+    await downloadAndInstall()
+  } else {
+    splash = new BrowserWindow({ width: 810, height: 610, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
+    splash.loadURL(`file://${__dirname}/splash.html`);
+    createWindow()
+    globalShortcut.register('CommandOrControl+R', () => { })
+    globalShortcut.register('F5', () => { })
+  }
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
