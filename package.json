@@ -1,7 +1,7 @@
 {
   "name": "thriveva-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.5",
+  "version": "1.5.7",
   "build": {
     "appId": "com.thriveva_timeTracker",
     "mac": {

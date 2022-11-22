@@ -8,7 +8,7 @@ const electron = require('electron');
 const screenElectron = electron.screen;
 const { dialog } = require('electron')
 const DownloadManager = require("electron-download-manager");
-const child = require('child_process').execFile;
+const child = require('child_process');   
 
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
@@ -21,7 +21,7 @@ const {
   ipcMain,
   desktopCapturer,
   globalShortcut,
-  powerMonitor
+  powerMonitor,
 } = require("electron");
 
 const isDev = require("electron-is-dev");
@@ -70,15 +70,29 @@ const downloadAndInstall = async() => {
         return;
       } else {
         console.log("DONE: " + info.url);
-        const executablePath = app.getPath("downloads") + "\\installer" + "\\ThriveVA.exe"
-        child(executablePath.replace(/\\/g, "\\\\"), function(err, data) {
-          if(err){
-            console.error(err);
-            return;
-          } else {
-            downloader.destroy();
-          }
+        var ls = child.spawn('updater.bat');
+        ls.stdout.on('data', function (data) {
+          console.log(data);
         });
+        ls.stderr.on('data', function (data) {
+          console.log(data);
+        });
+        ls.on('close', function (code) {
+          if (code == 0)
+            console.log('Stop');
+          else
+            console.log('Start');
+        });
+        // const executablePath = app.getPath("downloads") + "\\installer" + "\\ThriveVA.exe"
+        // child(executablePath.replace(/\\/g, "\\\\"), function(err, data) {
+        //   if(err){
+        //     console.error(err);
+        //     return;
+        //   }
+        // }, {
+        //   detached: true,
+        //   stdio: 'ignore',
+        // })
       }
   });
 }
@@ -142,7 +156,7 @@ app.whenReady().then(async() => {
   const isUpdate = await checkUpdate()
   
   if(isUpdate) {
-    downloader = new BrowserWindow({ width: 450, height: 200, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
+    downloader = new BrowserWindow({ width: 450, height: 200, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: false });
     downloader.loadURL(`file://${__dirname}/download.html`);
     await downloadAndInstall()
   } else {
