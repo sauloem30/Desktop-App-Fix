@@ -9,6 +9,7 @@ const screenElectron = electron.screen;
 const { dialog } = require('electron')
 const DownloadManager = require("electron-download-manager");
 const child = require('child_process');   
+const { autoUpdater } = require('electron-updater');
 
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
@@ -46,56 +47,6 @@ const store = new Storage({ schema })
 let win = null;
 let splash;
 let projectData = []
-let downloader;
-
-
-const checkUpdate = async() => {
-  let isUpdate = false
-  // call for update here
-  const response = await axios(`${host}/api/downloads/get_app_version`);
-
-  if(response.data) {
-    isUpdate = response.data.version !== app.getVersion()
-  }
-  return isUpdate
-  // 
-}
-
-const downloadAndInstall = async() => {
-  DownloadManager.download({
-    url: `${host}/api/downloads/desktop`
-  }, function (error, info) {
-      if (error) {
-        console.log(error);
-        return;
-      } else {
-        console.log("DONE: " + info.url);
-        var ls = child.spawn('updater.bat');
-        ls.stdout.on('data', function (data) {
-          console.log(data);
-        });
-        ls.stderr.on('data', function (data) {
-          console.log(data);
-        });
-        ls.on('close', function (code) {
-          if (code == 0)
-            console.log('Stop');
-          else
-            console.log('Start');
-        });
-        // const executablePath = app.getPath("downloads") + "\\installer" + "\\ThriveVA.exe"
-        // child(executablePath.replace(/\\/g, "\\\\"), function(err, data) {
-        //   if(err){
-        //     console.error(err);
-        //     return;
-        //   }
-        // }, {
-        //   detached: true,
-        //   stdio: 'ignore',
-        // })
-      }
-  });
-}
 
 function createWindow() {
   // Create the browser window.
@@ -141,31 +92,81 @@ function createWindow() {
   });
 
   // Open the DevTools.
+  if (!isDev) {
+    try {
+      autoUpdater.checkForUpdates();
+    } catch (err) {
+      dialog.showErrorBox(err.message, err.stack)
+    }
+  }
+
   if (isDev) {
     win.webContents.openDevTools({ mode: "detach" });
   }
 }
 
+// For autoupdate feature
+autoUpdater.on("checking-for-update", (_event, releaseNotes, releaseName) => {
+	const dialogOpts = {
+		type: 'info',
+		buttons: ['Ok'],
+		title: 'Application Update CHECK',
+		message: process.platform === 'win32' ? releaseNotes : releaseName,
+		detail: 'WE are checking for updates'
+	}
+	dialog.showMessageBox(dialogOpts, (response) => {
+
+	});
+})
+
+autoUpdater.on("update-available", (_event, releaseNotes, releaseName) => {
+	const dialogOpts = {
+		type: 'info',
+		buttons: ['Ok'],
+		title: 'Application Update',
+		message: process.platform === 'win32' ? releaseNotes : releaseName,
+		detail: 'A new version is being downloaded.'
+	}
+	dialog.showMessageBox(dialogOpts, (response) => {
+
+	});
+})
+
+autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
+	const dialogOpts = {
+		type: 'info',
+		buttons: ['Restart', 'Later'],
+		title: 'Application Update',
+		message: process.platform === 'win32' ? releaseNotes : releaseName,
+		detail: 'A new version has been downloaded. Restart the application to apply the updates.'
+	};
+	dialog.showMessageBox(dialogOpts).then((returnValue) => {
+		if (returnValue.response === 0) autoUpdater.quitAndInstall()
+	})
+});
+
+autoUpdater.on('update-not-available', () => {
+  const dialogOpts = {
+    type: 'info',
+    buttons: ['NO UPDATE'],
+    title: 'NO Update Available',
+    detail: 'NO UPDATE AVAILABLE'
+  }
+  dialog.showMessageBox(dialogOpts, (response) => {
+
+  });
+});
+
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.whenReady().then(async() => {
-  if(isDev) {
-    host = "http://localhost:4301"
-  }
-  const isUpdate = await checkUpdate()
-  
-  if(isUpdate) {
-    downloader = new BrowserWindow({ width: 450, height: 200, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: false });
-    downloader.loadURL(`file://${__dirname}/download.html`);
-    await downloadAndInstall()
-  } else {
-    splash = new BrowserWindow({ width: 810, height: 610, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
-    splash.loadURL(`file://${__dirname}/splash.html`);
-    createWindow()
-    globalShortcut.register('CommandOrControl+R', () => { })
-    globalShortcut.register('F5', () => { })
-  }
+  splash = new BrowserWindow({ width: 810, height: 610, transparent: true, frame: false, icon: __dirname + 'Icon.icns', alwaysOnTop: true });
+  splash.loadURL(`file://${__dirname}/splash.html`);
+  createWindow()
+  globalShortcut.register('CommandOrControl+R', () => { })
+  globalShortcut.register('F5', () => { })
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
@@ -275,6 +276,10 @@ ipcMain.on("project-started", async (event, data) => {
     .then(result => {
       projectData = JSON.parse(result)[0]
     });
+});
+
+ipcMain.on('app_version', (event) => {
+  event.sender.send('app_version', { version: app.getVersion() });
 });
 
 // getting mouse keyboard events 

@@ -1,15 +1,17 @@
 {
   "name": "thriveva-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.7",
+  "version": "1.5.21",
   "build": {
     "appId": "com.thriveva_timeTracker",
+    "productName": "ThrviveVA Desktop App",
     "mac": {
       "icon": "./public/icon.icns",
       "category": "public.app-category.utilities"
     },
     "win": {
-      "icon": "./public/app-logo.ico"
+      "icon": "./public/app-logo.ico",
+      "publish": ["github"]
     },
     "files": [
       "./build/**/*",
@@ -19,14 +21,16 @@
       "*.js"
     ],
     "directories": {
+      "output": "electron-build",
       "buildResources": "public"
     }
   },
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/Thrive-VA/Desktop-App"
+  },
   "mac": {
     "target": "dmg"
-  },
-  "win": {
-    "target": "nsis"
   },
   "linux": {
     "target": "deb"
@@ -49,6 +53,7 @@
     "electron-download-manager": "^2.1.2",
     "electron-is-dev": "^2.0.0",
     "electron-store": "^8.0.2",
+    "electron-updater": "^5.3.0",
     "fs-extra": "^10.1.0",
     "moment": "^2.29.3",
     "react": "^18.1.0",
@@ -69,6 +74,8 @@
     "react-eject": "react-scripts eject",
     "start": "react-scripts start",
     "build": "yarn react-build && yarn electron-build",
+    "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
+    "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",
     "test": "react-scripts test",
     "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=build/electron.js",
@@ -97,7 +104,6 @@
   "devDependencies": {
     "concurrently": "5.2.0",
     "electron": "^19.0.1",
-    "electron-builder": "^23.1.0",
     "wait-on": "5.1.0"
   }
 }
