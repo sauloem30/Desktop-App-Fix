@@ -48,6 +48,14 @@ let win = null;
 let splash;
 let projectData = []
 
+autoUpdater.setFeedURL({
+  provider: 'github',
+  owner: 'Thrive-VA',
+  repo: 'Desktop-App',
+  token: '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',
+  private: true
+})
+
 function createWindow() {
   // Create the browser window.
   let mainScreen = screenElectron.getPrimaryDisplay();
@@ -105,20 +113,7 @@ function createWindow() {
   }
 }
 
-// For autoupdate feature
-autoUpdater.on("checking-for-update", (_event, releaseNotes, releaseName) => {
-	const dialogOpts = {
-		type: 'info',
-		buttons: ['Ok'],
-		title: 'Application Update CHECK',
-		message: process.platform === 'win32' ? releaseNotes : releaseName,
-		detail: 'WE are checking for updates'
-	}
-	dialog.showMessageBox(dialogOpts, (response) => {
-
-	});
-})
-
+// SHOWS A MESSAGE WHEN A UPDTE AVAILABLE
 autoUpdater.on("update-available", (_event, releaseNotes, releaseName) => {
 	const dialogOpts = {
 		type: 'info',
@@ -132,6 +127,7 @@ autoUpdater.on("update-available", (_event, releaseNotes, releaseName) => {
 	});
 })
 
+//ASKS TO USER TO RESTART THE APPLICATION WHEN THE UPDATE IS READY TO BE INSTALLED
 autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
 	const dialogOpts = {
 		type: 'info',
@@ -144,19 +140,6 @@ autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
 		if (returnValue.response === 0) autoUpdater.quitAndInstall()
 	})
 });
-
-autoUpdater.on('update-not-available', () => {
-  const dialogOpts = {
-    type: 'info',
-    buttons: ['NO UPDATE'],
-    title: 'NO Update Available',
-    detail: 'NO UPDATE AVAILABLE'
-  }
-  dialog.showMessageBox(dialogOpts, (response) => {
-
-  });
-});
-
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
