@@ -223,7 +223,7 @@ const TimeTracker = () => {
 
   useEffect(() => {
     if(isReloadApp) {
-      handleProjectStart(activeProjectId, activeTimelogId, true);
+      handlePause(activeProjectId, activeTimelogId, true);
       setIsReloadApp(false);
     }
   }, [isReloadApp])
