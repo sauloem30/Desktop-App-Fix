@@ -30,7 +30,7 @@ const { uIOhook } = require("uiohook-napi");
 let hasMouseActivity = false;
 let hasKeyboardActivity = false;
 
-let host = "http://3.83.193.123";
+let host = "https://app.hireklever.com";
 
 DownloadManager.register({
   downloadFolder: app.getPath("downloads") + "/installer",

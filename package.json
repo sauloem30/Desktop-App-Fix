@@ -1,7 +1,7 @@
 {
   "name": "thriveva-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.32",
+  "version": "1.5.33",
   "build": {
     "appId": "com.thriveva_timeTracker",
     "productName": "ThrviveVA Desktop App",
@@ -40,7 +40,7 @@
   "main": "public/electron.js",
   "homepage": "./",
   "description": "time tracker app",
-  "proxy": "http://localhost:4301",
+  "proxy": "https://app.hireklever.com",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.9.0",

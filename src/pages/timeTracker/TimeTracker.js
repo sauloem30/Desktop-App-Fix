@@ -23,7 +23,7 @@ import { useNavigate } from "react-router-dom";
 
 import { io } from "socket.io-client";
 
-const socket = io('http://3.83.193.123')//io("http://localhost:3000");
+const socket = io('https://app.hireklever.com')//io("http://localhost:3000");
 
 let interval;
 let updater;
