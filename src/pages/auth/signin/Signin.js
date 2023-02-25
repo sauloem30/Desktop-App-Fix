@@ -24,9 +24,8 @@ const useStyles = makeStyles((theme) => ({
     height: "100vh",
     overflow: "hidden",
   },
-
   loginContainer: {
-    padding: "40px 20px",
+    padding: "20px",
     textAlign: "center",
   },
   loginContent: {
@@ -160,7 +159,7 @@ const Signin = (props) => {
             />
             <Typography
               variant="h2"
-              sx={{ marginTop: "20px", fontSize: '30px', marginBottom: "-20px" }}
+              sx={{ marginTop: "40px", fontSize: '25px', marginBottom: "-20px", fontFamily: 'inherit', fontWeight: 'normal' }}
             >
               Sign in to {`${AppConfig.product_name}`}
             </Typography>
@@ -242,13 +241,12 @@ const Signin = (props) => {
                             checked={isRemember}
                           />
                         }
-                        style={{fontSize: 14}}
-                        label="Remember me"
+                        label={<Typography style={{fontSize: 14}}>Remember Me</Typography>}
                       />
                     </Typography>
                   </div>
                   <Typography sx={{ paddingTop: "10px" }} variant="body1">
-                    <Link to="/forgotpassword" style={{ color: 'black', textDecoration: 'none', fontSize: '14px' }} >Forgot Password?</Link>
+                    <Link to="/forgotpassword" style={{ color: 'black', textDecoration: 'none', fontSize: 14 }} >Forgot Password?</Link>
                   </Typography>
                 </Box>
                 <div style={{ display: "flex", justifyContent: "center", marginTop: '-20px' }}>
@@ -264,7 +262,7 @@ const Signin = (props) => {
 
                   <LoadingButton
                     color="secondary"
-                    style={{ backgroundColor: "#8E78E1", width: "120px", color: "white" }}
+                    style={{ backgroundColor: "#8E78E1", width: "120px", color: "white", textTransform: 'none' }}
                     onClick={handleLogin}
                     loading={isLoading}
                     loadingPosition="end"

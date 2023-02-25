@@ -128,9 +128,9 @@ const TimeTracker = () => {
       const returned_data = await handlePostTimeLog(id, userId, isMidnight, isResumeLog, resumeLogId);
       if(returned_data.data?.success) {
         // activate idle timer
-        setDailyLimit(`Today's Limit : ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
+        setDailyLimit(`Today's Limit: ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
         setActiveTimelogId(returned_data.data.id)
-        document.title = `${name}-Thriveva v${appVersion}`
+        document.title = `${name}-Klever v${appVersion}`
         setActiveProjectId(id);
         localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
         setProjectName(name);
@@ -187,7 +187,7 @@ const TimeTracker = () => {
     setErrorMessage('')
     setCurrentTimer(0)
     setDailyLimit("No Daily Limit")
-    document.title = `ThriveVA v${appVersion}`
+    document.title = `Klever v${appVersion}`
     setProjectName("Select a project")
 
     clearInterval(interval)
