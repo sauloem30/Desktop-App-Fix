@@ -40,7 +40,7 @@ const TimeTracker = () => {
   const [noEvents, setNoEvents] = useState(0);
   const [returnId, setReturnId] = useState('');
   const [activeTimelogId, setActiveTimelogId] = useState(-1);
-  const [dailyLimit, setDailyLimit] = useState("No Daily Limit")
+  const [dailyLimit, setDailyLimit] = useState("")
   const [isLimitReached, setIsLimitReached] = useState(false);
   const [isClearScreenshots, setIsClearScreenshots] = useState(false);
   const [userId, setUserId] = useState(0);
@@ -171,7 +171,7 @@ const TimeTracker = () => {
           }, 5000)
 
           // handle Socket Connection
-          socket.emit('register', {test: 'this is a test room to register'});
+          socket.emit('register', {user_id: userId});
         } else {
           return null;
         }
@@ -186,7 +186,7 @@ const TimeTracker = () => {
   const handlePause = async(projectId, timelogId, isMidnight = false, isIdle = false ) => {
     setErrorMessage('')
     setCurrentTimer(0)
-    setDailyLimit("No Daily Limit")
+    setDailyLimit("")
     document.title = `Klever v${appVersion}`
     setProjectName("Select a project")
 
@@ -199,7 +199,7 @@ const TimeTracker = () => {
       if(response.data?.success) {
         clearInterval(interval)
         window.electronApi.send('paused');
-        socket.emit('unregister', {hmmm: 'This is a test'})
+        socket.emit('unregister', {user_id: userId})
       } else {
         setErrorMessage(response.data.error_message)
         clearInterval(interval)
@@ -484,7 +484,7 @@ const TimeTracker = () => {
                             />
                           </Box>
                           <ListItemText
-                            primary={project.time ? getHourMin(parseInt(project.time)) : "No Limit"}
+                            primary={project.time ? getHourMin(parseInt(project.time)) : "00:00"}
                             sx={{ textAlign: "right" }}
                           />
                         </ListItem>

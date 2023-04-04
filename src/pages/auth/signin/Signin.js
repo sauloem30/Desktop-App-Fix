@@ -148,8 +148,7 @@ const Signin = (props) => {
               anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
               onClose={handleToast} autoHideDuration={4000} >
               <Alert severity="success" color="info" sx={{ width: '100%' }}>
-                Password Reset instructions sent to your email
-                account.
+                Password Reset instructions sent to your email account.
               </Alert>
             </Snackbar>
             <img
