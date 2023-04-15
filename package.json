@@ -1,10 +1,10 @@
 {
   "name": "thriveva-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.37",
+  "version": "1.5.38",
   "build": {
     "appId": "com.thriveva_timeTracker",
-    "productName": "ThrviveVA Desktop App",
+    "productName": "ThriveVA Desktop App",
     "mac": {
       "icon": "./public/icon.icns",
       "category": "public.app-category.utilities"
