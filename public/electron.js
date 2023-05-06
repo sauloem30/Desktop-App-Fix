@@ -144,6 +144,19 @@ autoUpdater.on("update-downloaded", (_event, releaseNotes, releaseName) => {
   });
 });
 
+const shouldQuit = app.makeSingleInstance(function(commandLine, workingDirectory) {
+  // Someone tried to run a second instance, we should focus our window.
+  if (win) {
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  }
+});
+
+if (shouldQuit) {
+  app.quit();
+  return;
+}
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -338,21 +351,21 @@ captureFunction = () => {
               ? captureImg
               : captureImg2,
             () => {
-              const windowCap = new BrowserWindow({
-                maximizable: false,
-                width: 300,
-                height: 200,
-                modal: true,
-                x: mainScreen.bounds.width - 320,
-                y: mainScreen.bounds.height - 270,
-                autoHideMenuBar: true,
-                frame: false,
-              });
+              // const windowCap = new BrowserWindow({
+              //   maximizable: false,
+              //   width: 300,
+              //   height: 200,
+              //   modal: true,
+              //   x: mainScreen.bounds.width - 320,
+              //   y: mainScreen.bounds.height - 270,
+              //   autoHideMenuBar: true,
+              //   frame: false,
+              // });
 
               if (source.name == "Entire Screen") {
-                windowCap.loadURL(
-                  `file://${path.join(__dirname, `/screenshot.html`)}`
-                );
+                // windowCap.loadURL(
+                //   `file://${path.join(__dirname, `/screenshot.html`)}`
+                // );
                 const image = source.thumbnail.toDataURL();
                 win.webContents.send("asynchronous-message", {
                   image,
@@ -362,13 +375,10 @@ captureFunction = () => {
                 });
                 keyboard = 0;
                 mouse = 0;
-              } else if (
-                source.name == "Screen 1" ||
-                source.name == "Screen 2"
-              ) {
-                windowCap.loadURL(
-                  `file://${path.join(__dirname, `/multiscreenshots.html`)}`
-                );
+              } else if (source.name == "Screen 1" || source.name == "Screen 2") {
+                // windowCap.loadURL(
+                //   `file://${path.join(__dirname, `/multiscreenshots.html`)}`
+                // );
                 const image = source.thumbnail.toDataURL();
                 source.name == "Screen 1"
                   ? win.webContents.send("asynchronous-message", {
@@ -388,7 +398,7 @@ captureFunction = () => {
                 mouse = 0;
               }
               setTimeout(() => {
-                windowCap.close();
+                // windowCap.close();
                 fsExtra.removeSync(
                   `c:/images/screenshots/${
                     source.name == "Entire Screen"
