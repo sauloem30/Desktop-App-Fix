@@ -10,6 +10,7 @@ const { dialog } = require("electron");
 const DownloadManager = require("electron-download-manager");
 const child = require("child_process");
 const { autoUpdater } = require("electron-updater");
+const logger = require('./logger');
 
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
@@ -173,6 +174,8 @@ if (!shouldLock) {
     createWindow();
     globalShortcut.register("CommandOrControl+R", () => {});
     globalShortcut.register("F5", () => {});
+
+    logger.log("App started");
   });
 }
 
@@ -184,6 +187,8 @@ const ProcessOut = async () => {
   const { id, projectId, userId } = projectData;
   if (id && projectId && userId) {
     const processData = async () => {
+      logger.log("Process Out")
+
       const obj = {
         time_out: moment().utc(),
         application_type: "desktop-auto",
@@ -193,8 +198,10 @@ const ProcessOut = async () => {
       };
       try {
         await axios.post(`${host}/api/timelog/time_out`, obj);
+        logger.log("  Process Out Successful")
       } catch (err) {
         console.log(err);
+        logger.log("  Error processing out")
       }
     };
     await processData();
@@ -204,6 +211,7 @@ const ProcessOut = async () => {
 app.on("window-all-closed", async () => {
   if (process.platform !== "darwin") {
     await ProcessOut();
+    logger.log("Closing application")
     app.quit();
   }
 });
@@ -230,6 +238,7 @@ const handlePause = () => {
   clearInterval(CaptureSSinterval);
   clearTimeout(CaptureTimeout);
   clearInterval(CaptureMouseActivity);
+  logger.log("Application Paused")
 };
 
 ipcMain.on("paused", async (event, data) => {
@@ -245,6 +254,7 @@ ipcMain.on("quiteApp", async (event, data) => {
 
 ipcMain.on("project-started", async (event, data) => {
   uIOhook.start();
+  logger.log("User Clocked IN")
 
   CaptureTimeout = setTimeout(
     () => captureFunction(),
@@ -278,6 +288,8 @@ ipcMain.on("project-started", async (event, data) => {
     .executeJavaScript('localStorage.getItem("projectData");', true)
     .then((result) => {
       projectData = JSON.parse(result)[0];
+      logger.log("  Project Details: " + JSON.stringify(JSON.parse(result)[0]))
+      logger.log("  ------------------------------ ")
     });
 });
 
@@ -314,6 +326,7 @@ captureFunction = () => {
   let captureImg;
   let captureImg2;
   let mainScreen = screenElectron.getPrimaryDisplay();
+  logger.log("  Capture function initiated")
 
   desktopCapturer
     .getSources({

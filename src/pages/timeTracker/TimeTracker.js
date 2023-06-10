@@ -9,6 +9,7 @@ import Typography from "@mui/material/Typography";
 import moment from "moment";
 import React, { useEffect, useState, useRef } from "react";
 import { getProjects, handlePostTimeLog, handleUpdateTimeLog, handleLogout, getLatestLogin } from "../../api";
+// import { writeLog } from "../../helpers";
 import { PauseIcon, StartIcon, MenuIcon } from "../../assests/icons/SvgIcons";
 import logo from "../../assests/images/app-logo.png";
 import axiosInstance from "../../utils/axios-instance";
@@ -20,6 +21,7 @@ import Popper from '@mui/material/Popper';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import { useNavigate } from "react-router-dom";
+import log from 'electron-log';
 
 import { io } from "socket.io-client";
 
@@ -168,7 +170,7 @@ const TimeTracker = () => {
 
           updater = setInterval(() => {
             socket.emit('update', {user_id: userId, id: returned_data.data.id});
-          }, 5000)
+          }, 180000)
 
           // handle Socket Connection
           socket.emit('register', {user_id: userId});
@@ -237,6 +239,7 @@ const TimeTracker = () => {
       setUserId(parseInt(user));
       setErrorMessage('');
       setIsLoadAuto(true);
+      log.info('Log from the main process');
     }
     initialLoad()
   }, []);
