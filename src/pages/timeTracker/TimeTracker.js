@@ -25,7 +25,7 @@ import log from 'electron-log';
 
 import { io } from "socket.io-client";
 
-const socket = io('https://app.hireklever.com')//io("http://localhost:3000");
+const socket = io('https://app.useklever.com')//io("http://localhost:3000");
 
 let interval;
 let updater;
