@@ -48,7 +48,10 @@ const TimeTracker = () => {
   const [userId, setUserId] = useState(0);
   const [open, setOpen] = useState(false);
   const [isLoadAuto, setIsLoadAuto] = useState(false);
-  
+  const [weeklyLimitInSeconds, setWeeklyLimitInSeconds] = useState(0);
+  const [inactivityTimeoffInSeconds, setInactivityTimeoffInSeconds] = useState(1200);
+  const [totalWorkedThisWeekInSeconds, setTotalWorkedThisWeekInSeconds] = useState(0);
+
   const anchorRef = useRef(null);
   const navigate = useNavigate();
   const appVersion = localStorage.getItem('version');
@@ -95,12 +98,15 @@ const TimeTracker = () => {
     }
   }
 
-  const getProjectData = async() => {
+  const getProjectData = async () => {
     const user = localStorage.getItem("userId")
+
+    // load accessibilities
+    await getAccessibilities();
 
     const res = await getProjects(user)
     const { result } = res
-    if(res.err_msg?.length === 0) {
+    if (res.err_msg?.length === 0) {
       setProjects(result);
       let totalTime = 0
 
@@ -112,14 +118,32 @@ const TimeTracker = () => {
     }
   }
 
-  const handleProjectStart = async (project, isMidnight, isResumeLog=false, resumeLogId=null) => {
+  const getAccessibilities = async () => {
+    const userId = localStorage.getItem("userId")
+    const { data } = await axiosInstance.get(`/accessibilities/desktop-app?user_id=${userId}`)
+    setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
+    setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 1200);
+    setDailyLimit(`Weekly time tracking limit: ${data?.weeklyLimitInSeconds > 0 ? getHourMin(data?.weeklyLimitInSeconds) : "None"}`);
+  }
+
+  const getTotalWorkedThisWeek = async () => {
+    const userId = localStorage.getItem("userId")
+    const startOfWeek = moment().startOf('week').utc().format('YYYY-MM-DD HH:mm:ss');
+    const endOfWeek = moment().endOf('week').utc().format('YYYY-MM-DD HH:mm:ss');
+    const { data } = await axiosInstance.get(`/timelog/total-weekly-hours?user_id=${userId}&start_date=${startOfWeek}&end_date=${endOfWeek}`)
+    setTotalWorkedThisWeekInSeconds(data?.duration || 0);
+    return data?.duration || 0;
+  }
+
+  const handleProjectStart = async (project, isMidnight, isResumeLog = false, resumeLogId = null) => {
+    localStorage.removeItem('SystemIdleTime');
     setErrorMessage('')
     const userId = parseInt(localStorage.getItem("userId"))
-    if(isLoading === false) {
+    if (isLoading === false) {
       // Log out first if clocked in to another project
-      if(project.id !== activeProjectId && activeProjectId !== false) {
-        const response = await handleUpdateTimeLog( activeProjectId, activeTimelogId, userId )
-        if(response.data?.error_message.length > 0) {
+      if (project.id !== activeProjectId && activeProjectId !== false) {
+        const response = await handleUpdateTimeLog(activeProjectId, activeTimelogId, userId)
+        if (response.data?.error_message.length > 0) {
           setErrorMessage(response.data.error_message)
         }
       }
@@ -128,13 +152,11 @@ const TimeTracker = () => {
       const { id, name, daily_limit_by_minute } = project;
       setIsLimitReached(false);
       const returned_data = await handlePostTimeLog(id, userId, isMidnight, isResumeLog, resumeLogId);
-      if(returned_data.data?.success) {
-        // activate idle timer
-        setDailyLimit(`Today's Limit: ${daily_limit_by_minute === 0 ? "No Daily Limit" : getHourMin(daily_limit_by_minute * 60)}`);
+      if (returned_data.data?.success) {
         setActiveTimelogId(returned_data.data.id)
         document.title = `${name}-ThriveVA v${appVersion}`
         setActiveProjectId(id);
-        localStorage.setItem('projectData', JSON.stringify([{id: returned_data.data.id, projectId: id, userId: returned_data.data.userId}]))
+        localStorage.setItem('projectData', JSON.stringify([{ id: returned_data.data.id, projectId: id, userId: returned_data.data.userId }]))
         setProjectName(name);
         clearInterval(interval);
         clearInterval(updater);
@@ -142,6 +164,8 @@ const TimeTracker = () => {
         window.electronApi.send("project-started");
         let filteredProject = projects.filter((item, i) => item.id === id);
         if (filteredProject) {
+          const totalDuration = await getTotalWorkedThisWeek();
+
           filteredProject[0].time = returned_data.data.project_data[0].time;
           setCurrentTimer(state => state += parseInt(filteredProject[0].time));
           const startTime = moment().utc().format('YYYY-MM-DD HH:mm:ss')
@@ -155,25 +179,28 @@ const TimeTracker = () => {
               subtotalToday = 0;
               filteredProjectTimeTotal = 0;
               setIsReloadApp(true);
-            } else if((parseInt(filteredProject[0].time) / 60 !== filteredProject[0].daily_limit_by_minute) || filteredProject[0].daily_limit_by_minute === 0) {             
+            } 
+            else if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
+              setIsLimitReached(true)
+              handlePause(filteredProject[0].id, returned_data.data.id)
+            }
+            else {
               // get total today
               const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss')
               const timeDiff = moment(timeNow).diff(startTime, 'seconds')
               setCurrentTimer(filteredProjectTimeTotal + timeDiff)
               setTotalToday(subtotalToday + timeDiff)
               filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
-            } else {
-              setIsLimitReached(true)
-              handlePause(filteredProject[0].id)
+              setTotalWorkedThisWeekInSeconds(state => state + timeDiff)
             }
           }, 1000)
 
           updater = setInterval(() => {
-            socket.emit('update', {user_id: userId, id: returned_data.data.id});
+            socket.emit('update', { user_id: userId, id: returned_data.data.id });
           }, 180000)
 
           // handle Socket Connection
-          socket.emit('register', {user_id: userId});
+          socket.emit('register', { user_id: userId });
         } else {
           return null;
         }
@@ -185,10 +212,10 @@ const TimeTracker = () => {
     }
   };
 
-  const handlePause = async(projectId, timelogId, isMidnight = false, isIdle = false ) => {
+  const handlePause = async (projectId, timelogId, isMidnight = false, idleTime = 0) => {
+    localStorage.removeItem('SystemIdleTime');
     setErrorMessage('')
     setCurrentTimer(0)
-    setDailyLimit("")
     document.title = `ThriveVA v${appVersion}`
     setProjectName("Select a project")
 
@@ -197,11 +224,11 @@ const TimeTracker = () => {
     let project = projects.filter((item) => item.id === projectId);
     if (project) {
       setActiveProjectId(false);
-      const response = await handleUpdateTimeLog( ...project, timelogId || activeTimelogId, userId, isMidnight, isIdle )
-      if(response.data?.success) {
+      const response = await handleUpdateTimeLog(...project, timelogId || activeTimelogId, userId, isMidnight, idleTime)
+      if (response.data?.success) {
         clearInterval(interval)
         window.electronApi.send('paused');
-        socket.emit('unregister', {user_id: userId})
+        socket.emit('unregister', { user_id: userId })
       } else {
         setErrorMessage(response.data.error_message)
         clearInterval(interval)
@@ -210,31 +237,32 @@ const TimeTracker = () => {
     }
 
     if (isMidnight) {
-      setTimeout(async() => {
+      setTimeout(async () => {
         setCurrentTimer(0);
         setTotalToday(0);
         // Update limit here
         const projectData = await getProjectData();
         const newProjectData = projectData.filter((item, i) => item.id === projectId);
 
-        if(newProjectData.length > 0) {
-          await handleProjectStart({ id: projectId, name: newProjectData[0].name, daily_limit_by_minute: newProjectData[0].daily_limit_by_minute}, true);
+        if (newProjectData.length > 0) {
+          await handleProjectStart({ id: projectId, name: newProjectData[0].name, daily_limit_by_minute: newProjectData[0].daily_limit_by_minute }, true);
         }
-      }, 1000);}
+      }, 1000);
+    }
   };
 
   useEffect(() => {
-    if(isReloadApp) {
+    if (isReloadApp) {
       handlePause(activeProjectId, activeTimelogId, true);
       setIsReloadApp(false);
     }
   }, [isReloadApp])
 
   useEffect(() => {
-    const initialLoad = async() => {
+    const initialLoad = async () => {
       window.electronApi.send("paused")
       const user = localStorage.getItem("userId")
-  
+
       await getProjectData();
       setUserId(parseInt(user));
       setErrorMessage('');
@@ -245,14 +273,14 @@ const TimeTracker = () => {
   }, []);
 
   useEffect(() => {
-    if(isLoadAuto) {
+    if (isLoadAuto) {
       const user = localStorage.getItem("userId")
       handleAutoClockIn(user)
     }
   }, [isLoadAuto])
 
   useEffect(() => {
-    if(!isClearScreenshots && activeProjectId) {
+    if (!isClearScreenshots && activeProjectId) {
       let data = []
       if (noEvents < 6) {
         if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
@@ -283,24 +311,20 @@ const TimeTracker = () => {
   }, [localStorage.getItem('screenshot'), isClearScreenshots])
 
   useEffect(() => {
-    const auto = async () => {
-      const isLogout = JSON.parse(localStorage.getItem('autoLoad'));
-      if(isLogout && isLogout.is_auto) {
-        if(userId !== null) {
-          localStorage.removeItem('autoLoad');
-          await handlePause(activeProjectId, activeTimelogId, false, true);
-          setErrorMessage('The system detected that you have been idle for more than 20 minutes. You were automatically logged out');
-          // reload data
-          await getProjectData();
-        }
+    const checkIdleTime = async () => {
+      const systemIdleTime = localStorage.getItem('SystemIdleTime');
+
+      if (activeProjectId > 0 && inactivityTimeoffInSeconds > 0 && systemIdleTime >= inactivityTimeoffInSeconds) {
+        await handlePause(activeProjectId, activeTimelogId, false, inactivityTimeoffInSeconds);
+        setErrorMessage(`The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60} minutes. You were automatically logged out`);
       }
     }
-    auto();
-  }, [localStorage.getItem('autoLoad')])
+    checkIdleTime();
+  }, [localStorage.getItem('SystemIdleTime'), inactivityTimeoffInSeconds, activeProjectId])
 
   const handleLimitReached = () => {
     setIsLimitReached(true)
-    setTimeout(() => setIsLimitReached(false), 4000);
+    setTimeout(() => setIsLimitReached(false), 5000);
   }
 
   const handleToggle = () => {
@@ -314,12 +338,12 @@ const TimeTracker = () => {
     setOpen(false);
   };
 
-  const handleUserLogout = async() => {
+  const handleUserLogout = async () => {
     const response = await handleLogout();
     if (activeProjectId) {
       await handlePause(activeProjectId);
     }
-    if(response.data?.success) {
+    if (response.data?.success) {
       localStorage.removeItem('isRemember');
       localStorage.removeItem('userId');
       navigate("/");
@@ -337,10 +361,10 @@ const TimeTracker = () => {
     }
   }
 
-  const handleAutoClockIn = async(user) => {
+  const handleAutoClockIn = async (user) => {
     const record = await getLatestLogin(user)
     try {
-      if(record.err_msg.length === 0 && record.data.length > 0) {
+      if (record.err_msg.length === 0 && record.data.length > 0) {
         // handleAutoClockin Here
         await handleProjectStart(
           {
@@ -372,30 +396,30 @@ const TimeTracker = () => {
             className={classes.loginContainer}
             style={{ boxShadow: "none", position: 'relative' }}
           >
-              <div
-                ref={anchorRef}
-                style={{
-                  position: 'absolute',
-                  width: '100%',
-                  textAlign: 'right',
-                  top: 10,
-                  right: 10,
-                  cursor: 'pointer'
-                }}
-                onClick={handleToggle} 
-              >
-                <MenuIcon style={{position: 'absolute', top: 20, right: 20}} />
-              </div>
-              <img
-                src={logo}
-                style={{
-                  maxHeight: 30,
-                  width: "162px",
-                  marginBottom: "20px",
-                  marginTop: "20px",
-                }}
-                alt="logo"
-              />
+            <div
+              ref={anchorRef}
+              style={{
+                position: 'absolute',
+                width: '100%',
+                textAlign: 'right',
+                top: 10,
+                right: 10,
+                cursor: 'pointer'
+              }}
+              onClick={handleToggle}
+            >
+              <MenuIcon style={{ position: 'absolute', top: 20, right: 20 }} />
+            </div>
+            <img
+              src={logo}
+              style={{
+                maxHeight: 30,
+                width: "162px",
+                marginBottom: "20px",
+                marginTop: "20px",
+              }}
+              alt="logo"
+            />
             <Box sx={{ border: "1px solid #F2F3F7" }} />
             <Typography variant="h4" sx={{ marginTop: "32px", pointerEvents: "none" }}>
               {projectName}
@@ -413,19 +437,19 @@ const TimeTracker = () => {
             >
               Total today: {getHourMin(totalToday)}
             </Typography>
-            <div style={{textAlign: 'center', minHeight: 25}}>
+            <div style={{ textAlign: 'center', minHeight: 25 }}>
               {
                 isLimitReached && (
-                    <Typography variant="body5" style={{color: 'red'}}>
-                      Project Limit Reached
-                    </Typography>
+                  <Typography variant="body5" style={{ color: 'red' }}>
+                    Weekly Time Limit Reached
+                  </Typography>
                 )
               }
               {
                 errorMessage.length > 0 && (
-                    <Typography variant="body5" style={{color: 'red'}}>
-                      {errorMessage}
-                    </Typography>
+                  <Typography variant="body5" style={{ color: 'red' }}>
+                    {errorMessage}
+                  </Typography>
                 )
               }
             </div>
@@ -441,7 +465,7 @@ const TimeTracker = () => {
                   </ListItemText>
                 </ListItem>
                 <div className={classes.projectContainer} >
-                  {projects.length? projects.map((project, index) => {
+                  {projects.length ? projects.map((project, index) => {
                     return (
                       <div key={project.id} >
                         <ListItem
@@ -464,14 +488,14 @@ const TimeTracker = () => {
                             }}
                           >
                             {activeProjectId !== project.id ? (
-                              <Box onClick={async() => {
-                                (project.time / 60 >= project.daily_limit_by_minute && project.daily_limit_by_minute !== 0) ?
+                              <Box onClick={async () => {
+                                (weeklyLimitInSeconds > 0 && totalWorkedThisWeekInSeconds >= weeklyLimitInSeconds) ?
                                   handleLimitReached() : await handleProjectStart(project);
                               }}>
                                 {<StartIcon />}
                               </Box>
                             ) : (
-                              <Box onClick={async() => {
+                              <Box onClick={async () => {
                                 await handlePause(project.id)
                               }}>
                                 {<PauseIcon />}
@@ -495,12 +519,12 @@ const TimeTracker = () => {
                       </div>
                     );
                   }
-                ):  <Box sx={{
-                  marginTop: "35px",
-                }}>
-                  <Typography variant="subheading3">No active project available!</Typography>
-                </Box>
-                }
+                  ) : <Box sx={{
+                    marginTop: "35px",
+                  }}>
+                    <Typography variant="subheading3">No active project available!</Typography>
+                  </Box>
+                  }
                 </div>
               </List>
             </div>

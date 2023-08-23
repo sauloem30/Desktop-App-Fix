@@ -18,7 +18,6 @@
     "files": [
       "./build/**/*",
       "./dist/**/*",
-      "./node_modules/**/*",
       "./public/**/*",
       "*.js"
     ],

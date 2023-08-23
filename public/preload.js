@@ -19,3 +19,7 @@ ipcRenderer.on('asynchronous-message', (evt, data) => {
 ipcRenderer.on('auto-out', (evt, data) => {
     localStorage.setItem("autoLoad", JSON.stringify({is_auto: true}))
 });
+
+ipcRenderer.on('SystemIdleTime', (evt, data) => {
+    localStorage.setItem("SystemIdleTime", data)
+});

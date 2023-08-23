@@ -261,9 +261,11 @@ ipcMain.on("project-started", async (event, data) => {
     getRandomInt(30000, 19000)
   );
   CaptureMouseActivity = setInterval(() => {
-    if (powerMonitor.getSystemIdleTime() === 1200) {
-      win.webContents.send("auto-out");
-    }
+    // if (powerMonitor.getSystemIdleTime() === 1200) {
+    //   win.webContents.send("SystemIdleTime", powerMonitor.getSystemIdleTime());
+    // }
+
+    win.webContents.send("SystemIdleTime", powerMonitor.getSystemIdleTime());
 
     if (hasMouseActivity && hasKeyboardActivity) {
       mouse++;
@@ -322,7 +324,7 @@ uIOhook.on("wheel", (e) => {
   }
 });
 
-captureFunction = () => {
+var captureFunction = () => {
   let captureImg;
   let captureImg2;
   let mainScreen = screenElectron.getPrimaryDisplay();
