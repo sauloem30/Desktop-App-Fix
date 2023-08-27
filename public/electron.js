@@ -47,6 +47,7 @@ const store = new Storage({ schema });
 
 let win = null;
 let splash;
+let idlepopup;
 let projectData = [];
 
 //CONFIGURE AUTOUPDATER
@@ -57,6 +58,22 @@ autoUpdater.setFeedURL({
   token: "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",
   private: true,
 });
+
+function showIdlePopup() {
+  idlepopup = new BrowserWindow({
+    width: 400,
+    height: 400,
+    frame: false,
+    icon: __dirname + "Icon.icns",
+    alwaysOnTop: true,
+    webPreferences: {
+      nodeIntegration: true,
+      preload: path.join(__dirname, "./idlepopup-preload.js"),
+      backgroundThrottling: false,
+    },
+  });
+  idlepopup.loadURL(`file://${__dirname}/idlepopup.html`);
+}
 
 function createWindow() {
   // Create the browser window.
@@ -250,6 +267,20 @@ ipcMain.on("quiteApp", async (event, data) => {
   if (process.platform !== "darwin") {
     app.quit();
   }
+});
+
+ipcMain.on("idle-detected", async (event, data) => {
+  idlepopup.webContents.executeJavaScript(
+    `localStorage.setItem("idle-data", "${JSON.stringify(data)}");`
+  );
+  showIdlePopup();
+});
+
+ipcMain.on("idle-detected-notworking", async (event, data) => {
+  win.webContents.executeJavaScript(
+    `localStorage.setItem("idle-detected-notworking", "${data ? 'true' : 'false'}");`
+  );
+  idlepopup.destroy();
 });
 
 ipcMain.on("project-started", async (event, data) => {
