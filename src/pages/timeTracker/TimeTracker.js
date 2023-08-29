@@ -329,11 +329,11 @@ const TimeTracker = () => {
       if (activeProjectId > 0 && isNotWorking == 'true') {
         await handlePause(activeProjectId, activeTimelogId, false, inactivityTimeoffInSeconds);
         setErrorMessage(`The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60} minutes. You were automatically logged out`);
-        localStorage.removeItem('SystemIdleTime');
+        localStorage.removeItem('idle-detected-notworking');
       }
       else if (activeProjectId > 0 && isNotWorking == 'false') {
         setErrorMessage('')
-        localStorage.removeItem('SystemIdleTime');
+        localStorage.removeItem('idle-detected-notworking');
       }
     }
     checkIdleFeedback();
