@@ -49,7 +49,7 @@ const TimeTracker = () => {
   const [open, setOpen] = useState(false);
   const [isLoadAuto, setIsLoadAuto] = useState(false);
   const [weeklyLimitInSeconds, setWeeklyLimitInSeconds] = useState(0);
-  const [inactivityTimeoffInSeconds, setInactivityTimeoffInSeconds] = useState(1200);
+  const [inactivityTimeoffInSeconds, setInactivityTimeoffInSeconds] = useState(0);
   const [totalWorkedThisWeekInSeconds, setTotalWorkedThisWeekInSeconds] = useState(0);
 
   const anchorRef = useRef(null);
@@ -122,7 +122,7 @@ const TimeTracker = () => {
     const userId = localStorage.getItem("userId")
     const { data } = await axiosInstance.get(`/accessibilities/desktop-app?user_id=${userId}`)
     setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
-    setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 1200);
+    setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 0);
     setDailyLimit(`Weekly time tracking limit: ${data?.weeklyLimitInSeconds > 0 ? getHourMin(data?.weeklyLimitInSeconds) : "None"}`);
   }
 
@@ -330,6 +330,7 @@ const TimeTracker = () => {
         await handlePause(activeProjectId, activeTimelogId, false, inactivityTimeoffInSeconds);
         setErrorMessage(`The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60} minutes. You were automatically logged out`);
         localStorage.removeItem('idle-detected-notworking');
+        await getProjectData();
       }
       else if (activeProjectId > 0 && isNotWorking == 'false') {
         setErrorMessage('')

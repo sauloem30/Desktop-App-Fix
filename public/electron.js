@@ -256,6 +256,7 @@ const handlePause = () => {
   clearTimeout(CaptureTimeout);
   clearInterval(CaptureMouseActivity);
   logger.log("Application Paused")
+  idlepopup = null;
 };
 
 ipcMain.on("paused", async (event, data) => {
@@ -270,10 +271,8 @@ ipcMain.on("quiteApp", async (event, data) => {
 });
 
 ipcMain.on("idle-detected", async (event, data) => {
-  idlepopup.webContents.executeJavaScript(
-    `localStorage.setItem("idle-data", "${JSON.stringify(data)}");`
-  );
-  showIdlePopup();
+  if (!idlepopup)
+    showIdlePopup();
 });
 
 ipcMain.on("idle-detected-notworking", async (event, data) => {
