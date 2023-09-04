@@ -55,7 +55,7 @@ autoUpdater.setFeedURL({
   provider: "github",
   owner: "Thrive-VA",
   repo: "Desktop-App",
-  token: "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",
+  token: "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",
   private: true,
 });
 
