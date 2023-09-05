@@ -1,10 +1,10 @@
 {
-  "name": "thriveva-desktop-app",
+  "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.43",
+  "version": "1.5.44",
   "build": {
-    "appId": "com.thriveva_timeTracker",
-    "productName": "ThriveVA Desktop App",
+    "appId": "com.klever_timeTracker",
+    "productName": "Klever Desktop App",
     "mac": {
       "icon": "./public/icon.icns",
       "category": "public.app-category.utilities"
@@ -76,7 +76,7 @@
     "react-eject": "react-scripts eject",
     "start": "react-scripts start",
     "build": "yarn react-build && yarn electron-build",
-    "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
+    "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
     "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",
     "test": "react-scripts test",
