@@ -1,6 +1,6 @@
 @ECHO OFF
 @ECHO ============================= Terminating all program instance =============================
-TASKKILL /IM thriveva-desktop-app.exe /F
+TASKKILL /IM klever-desktop-app.exe /F
 @ECHO ================================ Running installer updates =================================
-START %userprofile%\Downloads\installer\ThriveVA.exe
+START %userprofile%\Downloads\installer\Klever.exe
 PAUSE

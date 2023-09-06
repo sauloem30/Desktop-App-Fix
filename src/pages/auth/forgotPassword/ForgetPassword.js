@@ -154,7 +154,6 @@ const ForgotPassword = () => {
                     value={emailAddress}
                     onChange={(event) => setEmailAddress(event.target.value)}
                     id="email"
-                  // placeholder="nat@thriveva.com"
                   />
                 </FormControl>
                 {errorMessage && (

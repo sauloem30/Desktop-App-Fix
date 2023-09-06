@@ -154,7 +154,7 @@ const TimeTracker = () => {
       const returned_data = await handlePostTimeLog(id, userId, isMidnight, isResumeLog, resumeLogId);
       if (returned_data.data?.success) {
         setActiveTimelogId(returned_data.data.id)
-        document.title = `${name}-ThriveVA v${appVersion}`
+        document.title = `${name}-Klever v${appVersion}`
         setActiveProjectId(id);
         localStorage.setItem('projectData', JSON.stringify([{ id: returned_data.data.id, projectId: id, userId: returned_data.data.userId }]))
         setProjectName(name);
@@ -216,7 +216,7 @@ const TimeTracker = () => {
     localStorage.removeItem('SystemIdleTime');
     setErrorMessage('')
     setCurrentTimer(0)
-    document.title = `ThriveVA v${appVersion}`
+    document.title = `Klever v${appVersion}`
     setProjectName("Select a project")
 
     clearInterval(interval)

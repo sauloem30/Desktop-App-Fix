@@ -50,12 +50,13 @@ let splash;
 let idlepopup;
 let projectData = [];
 
-//CONFIGURE AUTOUPDATER
+// CONFIGURE AUTOUPDATER
+// cant rename this 'Thrive-VA' to 'Klever' as this is the name of the repo
 autoUpdater.setFeedURL({
   provider: "github",
   owner: "Thrive-VA",
   repo: "Desktop-App",
-  token: "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",
+  token: "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",
   private: true,
 });
 
@@ -102,7 +103,7 @@ function createWindow() {
   );
 
   win.webContents.executeJavaScript(
-    `document.title="ThriveVA ${app.getVersion()}";`
+    `document.title="Klever ${app.getVersion()}";`
   );
 
   win.removeMenu();
