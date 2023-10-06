@@ -8,7 +8,6 @@ const electron = require("electron");
 const screenElectron = electron.screen;
 const { dialog } = require("electron");
 const DownloadManager = require("electron-download-manager");
-const child = require("child_process");
 const { autoUpdater } = require("electron-updater");
 const logger = require('./logger');
 
