@@ -36,6 +36,7 @@ const TimeTracker = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isReloadApp, setIsReloadApp] = useState(false);
   const [totalToday, setTotalToday] = useState(0);
+  const [currentSession, setCurrentSession] = useState(0);
   const [projectName, setProjectName] = useState('Select a project');
   const [errorMessage, setErrorMessage] = useState('');
   const [currentTimer, setCurrentTimer] = useState(0);
@@ -193,6 +194,8 @@ const TimeTracker = () => {
               filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
               setTotalWorkedThisWeekInSeconds(state => state + timeDiff)
             }
+
+            setCurrentSession(state => state + 1)
           }, 1000)
 
           updater = setInterval(() => {
@@ -216,6 +219,7 @@ const TimeTracker = () => {
     localStorage.removeItem('SystemIdleTime');
     setErrorMessage('')
     setCurrentTimer(0)
+    setCurrentSession(0)
     document.title = `Klever v${appVersion}`
     setProjectName("Select a project")
 
@@ -440,10 +444,10 @@ const TimeTracker = () => {
             />
             <Box sx={{ border: "1px solid #F2F3F7" }} />
             <Typography variant="h4" sx={{ marginTop: "32px", pointerEvents: "none" }}>
-              {projectName}
+              Current Session:
             </Typography>
             <Typography variant="body4" sx={{ marginBottom: "12px" }}>
-              <Box>{getHourMinSec(currentTimer)}</Box>
+              <Box>{getHourMinSec(currentSession)}</Box>
             </Typography>
             <Typography variant="body5">
               <Box sx={{ marginBottom: "10px" }}>{dailyLimit}</Box>
