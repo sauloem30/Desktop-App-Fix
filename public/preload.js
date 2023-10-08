@@ -25,5 +25,5 @@ ipcRenderer.on('SystemIdleTime', (evt, data) => {
 });
 
 ipcRenderer.on("track-activity", (evt, data) => {
-    localStorage.setItem("activity", data);
+    localStorage.setItem("activity", JSON.stringify(data));
 })

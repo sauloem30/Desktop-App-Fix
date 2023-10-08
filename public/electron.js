@@ -326,8 +326,7 @@ ipcMain.on("project-started", async (event, data) => {
           application: currentApp,
           startDate: new Date(),
         };
-        window.webContents.send("track-activity", currentActivity);
-        console.log(currentActivity);
+        win.webContents.send("track-activity", currentActivity);
       })
       .catch(console.log);
   }, 10 * 1000);
