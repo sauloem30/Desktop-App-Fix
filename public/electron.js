@@ -18,6 +18,7 @@ let CaptureTimeout = "";
 let CaptureMouseActivity = "";
 let keyboard = 0;
 let mouse = 0;
+let lastActivity = undefined;
 const {
   app,
   BrowserWindow,
@@ -327,7 +328,10 @@ ipcMain.on("project-started", async (event, data) => {
           created_date: new Date(),
           website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null
         };
-        win.webContents.send("track-activity", currentActivity);
+        if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
+          win.webContents.send("track-activity", currentActivity);
+          lastActivity = currentActivity;
+        }
       })
       .catch(console.log);
   }, 10 * 1000);
