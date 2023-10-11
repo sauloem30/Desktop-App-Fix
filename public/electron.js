@@ -326,18 +326,21 @@ ipcMain.on("project-started", async (event, data) => {
   ActivityTrackerInterval = setInterval(() => {
     ActiveWin()
       .then((currentApp) => {
-        const currentActivity = {
-          application_name: currentApp?.owner.name ?? "Unknown App",
-          created_date: new Date(),
-          website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null
-        };
-        if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
-          if (lastActivity !== undefined) {
-            lastActivity.updated_date = new Date();
+        if (projectData.id !== null && projectData.id !== undefined) {
+          const currentActivity = {
+            application_name: currentApp?.owner.name ?? "Unknown App",
+            created_date: new Date(),
+            website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null,
+            project_id: projectData.id
+          };
+          if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
+            if (lastActivity !== undefined) {
+              lastActivity.updated_date = new Date();
+            }
+            win.webContents.send("track-activity", currentActivity);
+            activityBuffer.push(currentActivity);
+            lastActivity = currentActivity;
           }
-          win.webContents.send("track-activity", currentActivity);
-          activityBuffer.push(currentActivity);
-          lastActivity = currentActivity;
         }
       })
       .catch(console.log);
