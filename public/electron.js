@@ -323,8 +323,9 @@ ipcMain.on("project-started", async (event, data) => {
     ActiveWin()
       .then((currentApp) => {
         const currentActivity = {
-          application: currentApp,
-          startDate: new Date(),
+          application_name: currentApp.owner.name,
+          created_date: new Date(),
+          website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null
         };
         win.webContents.send("track-activity", currentActivity);
       })
