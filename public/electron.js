@@ -13,12 +13,14 @@ const { autoUpdater } = require("electron-updater");
 const logger = require('./logger');
 
 let ActivityTrackerInterval = "";
+let ActivityFlushInterval = "";
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
 let CaptureMouseActivity = "";
 let keyboard = 0;
 let mouse = 0;
 let lastActivity = undefined;
+let activityBuffer = [];
 const {
   app,
   BrowserWindow,
@@ -256,6 +258,7 @@ const handlePause = () => {
   uIOhook.stop();
 
   clearInterval(ActivityTrackerInterval);
+  clearInterval(ActivityFlushInterval);
   clearInterval(CaptureSSinterval);
   clearTimeout(CaptureTimeout);
   clearInterval(CaptureMouseActivity);
@@ -324,17 +327,25 @@ ipcMain.on("project-started", async (event, data) => {
     ActiveWin()
       .then((currentApp) => {
         const currentActivity = {
-          application_name: currentApp.owner.name,
+          application_name: currentApp?.owner.name ?? "Unknown App",
           created_date: new Date(),
           website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null
         };
         if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
           win.webContents.send("track-activity", currentActivity);
           lastActivity = currentActivity;
+          activityBuffer.push(currentActivity);
         }
       })
       .catch(console.log);
   }, 10 * 1000);
+  
+  ActivityFlushInterval = setInterval(() => {
+    if (activityBuffer.length > 0) {
+      logger.log(activityBuffer); // Flush to cloud DB
+      activityBuffer = [];
+    }
+  }, 60 * 1000);
 
   win.webContents
     .executeJavaScript('localStorage.getItem("projectData");', true)
