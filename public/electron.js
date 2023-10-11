@@ -333,7 +333,7 @@ ipcMain.on("project-started", async (event, data) => {
         };
         if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
           if (lastActivity !== undefined) {
-            lastActivity.updated_at = new Date();
+            lastActivity.updated_date = new Date();
           }
           win.webContents.send("track-activity", currentActivity);
           activityBuffer.push(currentActivity);
