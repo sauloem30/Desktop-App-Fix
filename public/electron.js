@@ -2,16 +2,17 @@ const path = require("path");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 const Storage = require("electron-store");
+const ActiveWin = require("active-win");
 const axios = require("axios");
 const moment = require("moment");
 const electron = require("electron");
 const screenElectron = electron.screen;
 const { dialog } = require("electron");
 const DownloadManager = require("electron-download-manager");
-const child = require("child_process");
 const { autoUpdater } = require("electron-updater");
 const logger = require('./logger');
 
+let ActivityTrackerInterval = "";
 let CaptureSSinterval = "";
 let CaptureTimeout = "";
 let CaptureMouseActivity = "";
@@ -253,6 +254,7 @@ const handlePause = () => {
   mouse = 0;
   uIOhook.stop();
 
+  clearInterval(ActivityTrackerInterval);
   clearInterval(CaptureSSinterval);
   clearTimeout(CaptureTimeout);
   clearInterval(CaptureMouseActivity);
@@ -316,6 +318,19 @@ ipcMain.on("project-started", async (event, data) => {
       captureFunction();
     }, getRandomInt(10000, 199980));
   }, 199998);
+
+  ActivityTrackerInterval = setInterval(() => {
+    ActiveWin()
+      .then((currentApp) => {
+        const currentActivity = {
+          application_name: currentApp.owner.name,
+          created_date: new Date(),
+          website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null
+        };
+        win.webContents.send("track-activity", currentActivity);
+      })
+      .catch(console.log);
+  }, 10 * 1000);
 
   win.webContents
     .executeJavaScript('localStorage.getItem("projectData");', true)

@@ -344,6 +344,11 @@ const TimeTracker = () => {
     checkIdleFeedback();
   }, [localStorage.getItem('idle-detected-notworking'), inactivityTimeoffInSeconds, activeProjectId])
 
+  useEffect(() => {
+    const activityLog = localStorage.getItem('activity');
+    console.log(activityLog);
+  }, [localStorage.getItem('activity')])
+
   const handleLimitReached = () => {
     setIsLimitReached(true)
     setTimeout(() => setIsLimitReached(false), 5000);

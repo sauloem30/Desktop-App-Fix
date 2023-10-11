@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('electronApi',
     {
-        send: (channel, payload) => ipcRenderer.send(channel, payload),
+        send: (channel, payload) => ipcRenderer.send(channel, payload)
     }
 )
 
@@ -23,3 +23,7 @@ ipcRenderer.on('auto-out', (evt, data) => {
 ipcRenderer.on('SystemIdleTime', (evt, data) => {
     localStorage.setItem("SystemIdleTime", data)
 });
+
+ipcRenderer.on("track-activity", (evt, data) => {
+    localStorage.setItem("activity", JSON.stringify(data));
+})
