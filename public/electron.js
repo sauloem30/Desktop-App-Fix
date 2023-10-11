@@ -2,7 +2,7 @@ const path = require("path");
 const fs = require("fs");
 const fsExtra = require("fs-extra");
 const Storage = require("electron-store");
-const ActiveWin = require("active-win");
+const { activeWindow } = require("@miniben90/x-win");
 const axios = require("axios");
 const moment = require("moment");
 const electron = require("electron");
@@ -324,26 +324,22 @@ ipcMain.on("project-started", async (event, data) => {
   }, 199998);
 
   ActivityTrackerInterval = setInterval(() => {
-    ActiveWin()
-      .then((currentApp) => {
-        if (projectData.id !== null && projectData.id !== undefined) {
-          const currentActivity = {
-            application_name: currentApp?.owner.name ?? "Unknown App",
-            created_date: new Date(),
-            website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null,
-            project_id: projectData.id
-          };
-          if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
-            if (lastActivity !== undefined) {
-              lastActivity.updated_date = new Date();
-            }
-            win.webContents.send("track-activity", currentActivity);
-            activityBuffer.push(currentActivity);
-            lastActivity = currentActivity;
-          }
-        }
-      })
-      .catch(console.log);
+    const currentApp = activeWindow();
+    logger.log(currentApp);
+    const currentActivity = {
+      application_name: currentApp?.info.name ?? "Unknown App",
+      created_date: new Date(),
+      website: currentApp.url !== "" ? new URL(currentApp.url).hostname : null,
+      project_id: projectData.id
+    };
+    if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
+      if (lastActivity !== undefined) {
+        lastActivity.updated_date = new Date();
+      }
+      win.webContents.send("track-activity", currentActivity);
+      activityBuffer.push(currentActivity);
+      lastActivity = currentActivity;
+    }
   }, 10 * 1000);
   
   ActivityFlushInterval = setInterval(() => {
