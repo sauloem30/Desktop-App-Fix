@@ -332,9 +332,12 @@ ipcMain.on("project-started", async (event, data) => {
           website: typeof currentApp.url === "string" ? new URL(currentApp.url).hostname : null
         };
         if (lastActivity?.application_name !== currentActivity?.application_name || lastActivity?.website !== currentActivity?.website) {
+          if (lastActivity !== undefined) {
+            lastActivity.updated_at = new Date();
+          }
           win.webContents.send("track-activity", currentActivity);
-          lastActivity = currentActivity;
           activityBuffer.push(currentActivity);
+          lastActivity = currentActivity;
         }
       })
       .catch(console.log);
