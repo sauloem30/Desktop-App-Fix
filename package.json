@@ -40,7 +40,7 @@
   "homepage": "./",
   "description": "time tracker app",
   "proxy": "https://app.useklever.com",
-  "private": false,
+  "private": true,
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
