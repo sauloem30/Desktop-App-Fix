@@ -1,7 +1,7 @@
 {
   "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.44",
+  "version": "1.5.48",
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
@@ -44,6 +44,7 @@
   "dependencies": {
     "@emotion/react": "^11.9.0",
     "@emotion/styled": "^11.8.1",
+    "@fontsource/inter": "^5.0.15",
     "@miniben90/x-win": "^1.3.1",
     "@mui/icons-material": "^5.8.2",
     "@mui/lab": "^5.0.0-alpha.84",
