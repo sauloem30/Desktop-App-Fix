@@ -240,7 +240,7 @@ const Signin = (props) => {
                            </div>
                         )}
 
-                        <Box sx={{ display: 'flex', marginBottom: '40px' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '40px' }}>
                            <div style={{ textAlign: 'left', flex: 1 }}>
                               <Typography>
                                  <FormControlLabel
@@ -251,7 +251,7 @@ const Signin = (props) => {
                                  />
                               </Typography>
                            </div>
-                           <Typography sx={{ paddingTop: '10px' }} variant='body1'>
+                           <Typography variant='body1'>
                               <Link
                                  to='/forgotpassword'
                                  style={{ color: 'black', textDecoration: 'none', fontSize: 14 }}>

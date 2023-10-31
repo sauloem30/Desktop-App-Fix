@@ -31,7 +31,7 @@ const theme = createTheme({
          lineHeight: '150%',
       },
       h2: {
-         fontWeight: 600,
+         fontWeight: 500,
          fontSize: 40,
          lineHeight: '150%',
          fontFamily: 'Inter',
