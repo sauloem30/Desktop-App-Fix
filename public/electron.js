@@ -75,6 +75,7 @@ function showIdlePopup() {
          nodeIntegration: true,
          preload: path.join(__dirname, './idlepopup-preload.js'),
          backgroundThrottling: false,
+         sandbox: false,
       },
    });
    idlepopup.loadURL(`file://${__dirname}/idlepopup.html`);
@@ -97,6 +98,7 @@ function createWindow() {
          nodeIntegration: true,
          preload: path.join(__dirname, './preload.js'),
          backgroundThrottling: false,
+         sandbox: false,
       },
       show: false,
    });

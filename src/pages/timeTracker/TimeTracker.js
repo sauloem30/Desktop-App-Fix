@@ -209,9 +209,13 @@ const TimeTracker = () => {
                      const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss');
                      const timeDiff = moment(timeNow).diff(startTime, 'seconds');
                      setCurrentTimer(filteredProjectTimeTotal + timeDiff);
-                     setTotalToday(subtotalToday + timeDiff);
+                     // setTotalToday(subtotalToday + timeDiff);
                      filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
                      setTotalWorkedThisWeekInSeconds((state) => state + timeDiff);
+
+                     // get total today
+                     let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
+                     setTotalToday(parseInt(projectsTime));
                   }
 
                   setCurrentSession((state) => state + 1);
@@ -489,12 +493,15 @@ const TimeTracker = () => {
                      alt='logo'
                   />
                   <Box sx={{ border: '1px solid #F2F3F7' }} />
+
                   <Typography variant='h4' sx={{ marginTop: '32px', pointerEvents: 'none' }}>
                      Current Session:
                   </Typography>
+
                   <Typography variant='body4' sx={{ marginBottom: '12px' }}>
                      <Box>{getHourMinSec(currentSession)}</Box>
                   </Typography>
+
                   <Typography variant='body5'>
                      <Box sx={{ marginBottom: '10px' }}>{dailyLimit}</Box>
                   </Typography>
@@ -502,6 +509,7 @@ const TimeTracker = () => {
                   <Typography variant='body6' sx={{ marginTop: '10px', marginBottom: '32px' }}>
                      Total today: {getHourMin(totalToday)}
                   </Typography>
+
                   <div style={{ textAlign: 'center', minHeight: 25 }}>
                      {isLimitReached && (
                         <Typography variant='body5' style={{ color: 'red' }}>
@@ -514,6 +522,7 @@ const TimeTracker = () => {
                         </Typography>
                      )}
                   </div>
+
                   <div>
                      <List className={classes.style} component='nav' aria-label='mailbox folders'>
                         <ListItem
@@ -524,6 +533,7 @@ const TimeTracker = () => {
                               <Typography variant='subheading1'>Projects:</Typography>
                            </ListItemText>
                         </ListItem>
+
                         <div className={classes.projectContainer}>
                            {projects.length ? (
                               projects.map((project, index) => {
@@ -605,6 +615,7 @@ const TimeTracker = () => {
                </Paper>
             </Grid>
          </Grid>
+
          <Popper
             open={open}
             anchorEl={anchorRef.current}
