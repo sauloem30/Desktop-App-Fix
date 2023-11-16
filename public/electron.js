@@ -19,8 +19,10 @@ let CaptureTimeout = '';
 let CaptureMouseActivity = '';
 let keyboard = 0;
 let mouse = 0;
+let projectStart = false;
 let lastActivity = undefined;
 let activityBuffer = [];
+
 const {
    app,
    BrowserWindow,
@@ -245,10 +247,24 @@ function getRandomInt(min, max) {
 
 // getting events from src
 
-const handlePause = () => {
+const handlePause = async () => {
    keyboard = 0;
    mouse = 0;
    uIOhook.stop();
+
+   if (projectStart) {
+      const currentActivity = {
+         user_id: projectData.userId,
+         project_id: projectData.id,
+         updated_date: new Date(),
+      };
+
+      try {
+         await axios.put(`${host}/api/application-usage/paused`, { currentActivity });
+      } catch (error) {
+         console.log(error);
+      }
+   }
 
    clearInterval(ActivityTrackerInterval);
    clearInterval(ActivityFlushInterval);
@@ -257,6 +273,8 @@ const handlePause = () => {
    clearInterval(CaptureMouseActivity);
    logger.log('Application Paused');
    idlepopup = null;
+   projectStart = false;
+   lastActivity = undefined;
 };
 
 ipcMain.on('paused', async (event, data) => {
@@ -282,6 +300,7 @@ ipcMain.on('idle-detected-notworking', async (event, data) => {
 });
 
 ipcMain.on('project-started', async (event, data) => {
+   projectStart = true;
    uIOhook.start();
    logger.log('User Clocked IN');
 
@@ -314,32 +333,38 @@ ipcMain.on('project-started', async (event, data) => {
 
    ActivityTrackerInterval = setInterval(() => {
       const currentApp = activeWindow();
-      logger.log(currentApp);
       const currentActivity = {
-         application_name: currentApp?.info.name ?? 'Unknown App',
-         created_date: new Date(),
-         website: currentApp.url !== '' ? new URL(currentApp.url).hostname : null,
+         user_id: projectData.userId,
          project_id: projectData.id,
+         application_name: currentApp?.info.name ?? 'Unknown App',
+         website: currentApp.url !== '' ? new URL(currentApp.url).hostname : null,
+         created_date: new Date(),
+         updated_date: null,
       };
-      if (
-         lastActivity?.application_name !== currentActivity?.application_name ||
-         lastActivity?.website !== currentActivity?.website
-      ) {
+
+      if (lastActivity?.application_name !== currentActivity?.application_name) {
          if (lastActivity !== undefined) {
             lastActivity.updated_date = new Date();
+            activityBuffer.push(lastActivity);
          }
+
          win.webContents.send('track-activity', currentActivity);
          activityBuffer.push(currentActivity);
          lastActivity = currentActivity;
       }
-   }, 10 * 1000);
+   }, 10000); // 10 seconds
 
-   ActivityFlushInterval = setInterval(() => {
+   ActivityFlushInterval = setInterval(async () => {
       if (activityBuffer.length > 0) {
-         logger.log(activityBuffer); // Flush to cloud DB
-         activityBuffer = [];
+         try {
+            await axios.post(`${host}/api/application-usage/upload`, { activityBuffer });
+            activityBuffer = [];
+         } catch (error) {
+            console.log(error);
+            logger.log('Error processing out');
+         }
       }
-   }, 60 * 1000);
+   }, 20000); // 3 minutes
 
    win.webContents.executeJavaScript('localStorage.getItem("projectData");', true).then((result) => {
       projectData = JSON.parse(result)[0];
