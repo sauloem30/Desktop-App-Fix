@@ -255,7 +255,7 @@ const handlePause = async () => {
    if (projectStart) {
       const currentActivity = {
          user_id: projectData.userId,
-         project_id: projectData.id,
+         project_id: projectData.projectId,
          updated_date: new Date(),
       };
 
@@ -335,7 +335,7 @@ ipcMain.on('project-started', async (event, data) => {
       const currentApp = activeWindow();
       const currentActivity = {
          user_id: projectData.userId,
-         project_id: projectData.id,
+         project_id: projectData.projectId,
          application_name: currentApp?.info.name ?? 'Unknown App',
          website: currentApp.url !== '' ? new URL(currentApp.url).hostname : null,
          created_date: new Date(),
