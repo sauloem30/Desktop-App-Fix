@@ -129,8 +129,7 @@ const TimeTracker = () => {
       setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
       setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 0);
       setDailyLimit(
-         `Weekly time tracking limit: ${
-            data?.weeklyLimitInSeconds > 0 ? getHourMin(data?.weeklyLimitInSeconds) : 'None'
+         `Weekly time tracking limit: ${data?.weeklyLimitInSeconds > 0 ? getHourMin(data?.weeklyLimitInSeconds) : 'None'
          }`,
       );
    };
@@ -171,7 +170,6 @@ const TimeTracker = () => {
          );
          if (returned_data.data?.success) {
             setActiveTimelogId(returned_data.data.id);
-            document.title = `${name}-Klever v${appVersion}`;
             setActiveProjectId(id);
             localStorage.setItem(
                'projectData',
@@ -194,35 +192,43 @@ const TimeTracker = () => {
                let subtotalToday = totalToday;
                let filteredProjectTimeTotal = parseInt(filteredProject[0].time);
                interval = setInterval(() => {
-                  // handle auto out when midnight is reached
-                  if (moment().format('Hms') === '000') {
-                     setTotalToday(0);
-                     filteredProject[0].time = 0;
-                     subtotalToday = 0;
-                     filteredProjectTimeTotal = 0;
-                     setIsReloadApp(true);
-                  } else if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
-                     setIsLimitReached(true);
-                     handlePause(filteredProject[0].id, returned_data.data.id);
-                  } else {
-                     // get total today
-                     const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss');
-                     const timeDiff = moment(timeNow).diff(startTime, 'seconds');
-                     setCurrentTimer(filteredProjectTimeTotal + timeDiff);
-                     // setTotalToday(subtotalToday + timeDiff);
-                     filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
-                     setTotalWorkedThisWeekInSeconds((state) => state + timeDiff);
+                  try {
+                     // handle auto out when midnight is reached
+                     if (moment().format('Hms') === '000') {
+                        setTotalToday(0);
+                        filteredProject[0].time = 0;
+                        subtotalToday = 0;
+                        filteredProjectTimeTotal = 0;
+                        setIsReloadApp(true);
+                     } else if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
+                        setIsLimitReached(true);
+                        handlePause(filteredProject[0].id, returned_data.data.id);
+                     } else {
+                        // get total today
+                        const timeNow = moment().utc().format('YYYY-MM-DD HH:mm:ss');
+                        const timeDiff = moment(timeNow).diff(startTime, 'seconds');
+                        setCurrentTimer(filteredProjectTimeTotal + timeDiff);
+                        // setTotalToday(subtotalToday + timeDiff);
+                        filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
+                        setTotalWorkedThisWeekInSeconds((state) => state + timeDiff);
 
-                     // get total today
-                     let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
-                     setTotalToday(parseInt(projectsTime));
+                        // get total today
+                        let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
+                        setTotalToday(parseInt(projectsTime));
+                     }
+
+                     setCurrentSession((state) => state + 1);
+                  } catch (error) {
+                     console.log(error);
                   }
-
-                  setCurrentSession((state) => state + 1);
                }, 1000);
 
                updater = setInterval(() => {
-                  socket.emit('update', { user_id: userId, id: returned_data.data.id });
+                  try {
+                     socket.emit('update', { user_id: userId, id: returned_data.data.id });
+                  } catch (error) {
+                     console.log(error);
+                  }
                }, 180000);
 
                // handle Socket Connection
@@ -271,21 +277,25 @@ const TimeTracker = () => {
 
       if (isMidnight) {
          setTimeout(async () => {
-            setCurrentTimer(0);
-            setTotalToday(0);
-            // Update limit here
-            const projectData = await getProjectData();
-            const newProjectData = projectData.filter((item, i) => item.id === projectId);
+            try {
+               setCurrentTimer(0);
+               setTotalToday(0);
+               // Update limit here
+               const projectData = await getProjectData();
+               const newProjectData = projectData.filter((item, i) => item.id === projectId);
 
-            if (newProjectData.length > 0) {
-               await handleProjectStart(
-                  {
-                     id: projectId,
-                     name: newProjectData[0].name,
-                     daily_limit_by_minute: newProjectData[0].daily_limit_by_minute,
-                  },
-                  true,
-               );
+               if (newProjectData.length > 0) {
+                  await handleProjectStart(
+                     {
+                        id: projectId,
+                        name: newProjectData[0].name,
+                        daily_limit_by_minute: newProjectData[0].daily_limit_by_minute,
+                     },
+                     true,
+                  );
+               }
+            } catch (error) {
+               console.log(error);
             }
          }, 1000);
       }
@@ -359,8 +369,7 @@ const TimeTracker = () => {
             systemIdleTime >= inactivityTimeoffInSeconds
          ) {
             setErrorMessage(
-               `The system detected that you have been idle for more than ${
-                  inactivityTimeoffInSeconds / 60
+               `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
             window.electronApi.send('idle-detected', { inactivityTimeoffInSeconds });
@@ -376,8 +385,7 @@ const TimeTracker = () => {
          if (activeProjectId > 0 && isNotWorking == 'true') {
             await handlePause(activeProjectId, activeTimelogId, false, inactivityTimeoffInSeconds);
             setErrorMessage(
-               `The system detected that you have been idle for more than ${
-                  inactivityTimeoffInSeconds / 60
+               `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
             localStorage.removeItem('idle-detected-notworking');
@@ -390,15 +398,16 @@ const TimeTracker = () => {
       checkIdleFeedback();
    }, [localStorage.getItem('idle-detected-notworking'), inactivityTimeoffInSeconds, activeProjectId]);
 
-   // Application usage and Web activity log
-   useEffect(() => {
-      const activityLog = localStorage.getItem('activity');
-      // console.log(activityLog);
-   }, [localStorage.getItem('activity')]);
 
    const handleLimitReached = () => {
       setIsLimitReached(true);
-      setTimeout(() => setIsLimitReached(false), 5000);
+      setTimeout(() => {
+         try {
+            setIsLimitReached(false)
+         } catch (error) {
+            console.log(error);
+         }
+      }, 5000);
    };
 
    const handleToggle = () => {
@@ -561,7 +570,7 @@ const TimeTracker = () => {
                                                 <Box
                                                    onClick={async () => {
                                                       weeklyLimitInSeconds > 0 &&
-                                                      totalWorkedThisWeekInSeconds >=
+                                                         totalWorkedThisWeekInSeconds >=
                                                          weeklyLimitInSeconds
                                                          ? handleLimitReached()
                                                          : await handleProjectStart(project);

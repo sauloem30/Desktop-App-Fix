@@ -1,7 +1,7 @@
 {
   "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.5.53",
+  "version": "1.5.56",
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
@@ -77,7 +77,7 @@
     "react-build": "react-scripts build",
     "react-eject": "react-scripts eject",
     "start": "react-scripts start",
-    "build": "yarn react-build && yarn electron-build",
+    "build": "react-scripts build && electron-builder --win",
     "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
     "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",

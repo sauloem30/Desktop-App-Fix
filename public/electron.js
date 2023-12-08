@@ -145,7 +145,7 @@ autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
       message: process.platform === 'win32' ? releaseNotes : releaseName,
       detail: 'A new version is being downloaded.',
    };
-   dialog.showMessageBox(dialogOpts, (response) => {});
+   dialog.showMessageBox(dialogOpts, (response) => { });
 });
 
 //ASKS TO USER TO RESTART THE APPLICATION WHEN THE UPDATE IS READY TO BE INSTALLED
@@ -189,8 +189,8 @@ if (!shouldLock) {
       });
       splash.loadURL(`file://${__dirname}/splash.html`);
       createWindow();
-      globalShortcut.register('CommandOrControl+R', () => {});
-      globalShortcut.register('F5', () => {});
+      globalShortcut.register('CommandOrControl+R', () => { });
+      globalShortcut.register('F5', () => { });
 
       logger.log('App started');
    });
@@ -248,33 +248,19 @@ function getRandomInt(min, max) {
 // getting events from src
 
 const handlePause = async () => {
-   keyboard = 0;
-   mouse = 0;
-   uIOhook.stop();
-
-   if (projectStart) {
-      const currentActivity = {
-         user_id: projectData.userId,
-         project_id: projectData.projectId,
-         updated_date: new Date(),
-      };
-
-      try {
-         await axios.put(`${host}/api/application-usage/paused`, { currentActivity });
-      } catch (error) {
-         console.log(error);
-      }
-   }
+   logger.log('Application Paused');
 
    clearInterval(ActivityTrackerInterval);
    clearInterval(ActivityFlushInterval);
    clearInterval(CaptureSSinterval);
    clearTimeout(CaptureTimeout);
    clearInterval(CaptureMouseActivity);
-   logger.log('Application Paused');
    idlepopup = null;
    projectStart = false;
    lastActivity = undefined;
+   keyboard = 0;
+   mouse = 0;
+   uIOhook.stop();
 };
 
 ipcMain.on('paused', async (event, data) => {
@@ -304,67 +290,66 @@ ipcMain.on('project-started', async (event, data) => {
    uIOhook.start();
    logger.log('User Clocked IN');
 
-   CaptureTimeout = setTimeout(() => captureFunction(), getRandomInt(30000, 19000));
+   CaptureTimeout = setTimeout(() => {
+      try {
+         captureFunction();
+      } catch (err) {
+         console.log(err);
+      }
+   }, getRandomInt(30000, 19000));
    CaptureMouseActivity = setInterval(() => {
-      // if (powerMonitor.getSystemIdleTime() === 1200) {
-      //   win.webContents.send("SystemIdleTime", powerMonitor.getSystemIdleTime());
-      // }
+      try {
+         // if (powerMonitor.getSystemIdleTime() === 1200) {
+         //   win.webContents.send("SystemIdleTime", powerMonitor.getSystemIdleTime());
+         // }
 
-      win.webContents.send('SystemIdleTime', powerMonitor.getSystemIdleTime());
+         win.webContents.send('SystemIdleTime', powerMonitor.getSystemIdleTime());
 
-      if (hasMouseActivity && hasKeyboardActivity) {
-         mouse++;
-         hasMouseActivity = false;
-         hasKeyboardActivity = false;
-      } else if (hasMouseActivity) {
-         mouse++;
-         hasMouseActivity = false;
-      } else if (hasKeyboardActivity) {
-         keyboard++;
-         hasKeyboardActivity = false;
+         if (hasMouseActivity && hasKeyboardActivity) {
+            mouse++;
+            hasMouseActivity = false;
+            hasKeyboardActivity = false;
+         } else if (hasMouseActivity) {
+            mouse++;
+            hasMouseActivity = false;
+         } else if (hasKeyboardActivity) {
+            keyboard++;
+            hasKeyboardActivity = false;
+         }
+      } catch (error) {
+         logger.log(error);
       }
    }, 1000);
 
    CaptureSSinterval = setInterval(() => {
       CaptureTimeout = setTimeout(() => {
-         captureFunction();
+         try {
+            captureFunction();
+         } catch (err) {
+            console.log(err);
+         }
       }, getRandomInt(10000, 199980));
    }, 199998);
 
    ActivityTrackerInterval = setInterval(() => {
-      const currentApp = activeWindow();
-      const currentActivity = {
-         user_id: projectData.userId,
-         project_id: projectData.projectId,
-         application_name: currentApp?.info.name ?? 'Unknown App',
-         website: currentApp.url !== '' ? new URL(currentApp.url).hostname : null,
-         created_date: new Date(),
-         updated_date: null,
-      };
+      try {
+         if (!projectData?.projectId) return;
 
-      if (lastActivity?.application_name !== currentActivity?.application_name) {
-         if (lastActivity !== undefined) {
-            lastActivity.updated_date = new Date();
-            activityBuffer.push(lastActivity);
+         const currentApp = activeWindow();
+         const currentActivity = {
+            user_id: projectData?.userId,
+            project_id: projectData?.projectId,
+            application_name: currentApp?.info?.name ?? 'Unknown App'
+         };
+
+         if (lastActivity?.application_name !== currentActivity?.application_name) {
+            axios.post(`${host}/api/application-usage/upload2`, { currentActivity });
+            lastActivity = currentActivity;
          }
-
-         win.webContents.send('track-activity', currentActivity);
-         activityBuffer.push(currentActivity);
-         lastActivity = currentActivity;
+      } catch (err) {
+         logger.log(err);
       }
-   }, 10000); // 10 seconds
-
-   ActivityFlushInterval = setInterval(async () => {
-      if (activityBuffer.length > 0) {
-         try {
-            await axios.post(`${host}/api/application-usage/upload`, { activityBuffer });
-            activityBuffer = [];
-         } catch (error) {
-            console.log(error);
-            logger.log('Error processing out');
-         }
-      }
-   }, 20000); // 3 minutes
+   }, 5000); // 5 seconds
 
    win.webContents.executeJavaScript('localStorage.getItem("projectData");', true).then((result) => {
       projectData = JSON.parse(result)[0];
@@ -424,87 +409,93 @@ var captureFunction = () => {
             }
 
             setTimeout(() => {
-               // create directory when missing
-               const dir = path.resolve('c:/images/screenshots');
-               if (!fs.existsSync(dir)) {
-                  fs.mkdirSync(dir, { recursive: true });
-               }
-               fs.writeFile(
-                  path.resolve(
-                     `c:/images/screenshots/${
-                        source.name == 'Entire Screen'
+               try {
+                  // create directory when missing
+                  const dir = path.resolve('c:/images/screenshots');
+                  if (!fs.existsSync(dir)) {
+                     fs.mkdirSync(dir, { recursive: true });
+                  }
+                  fs.writeFile(
+                     path.resolve(
+                        `c:/images/screenshots/${source.name == 'Entire Screen'
                            ? 'screenshot-1.png'
                            : source.name == 'Screen 1'
-                           ? 'screenshot-1.png'
-                           : 'screenshot-2.png'
-                     }`,
-                  ),
-                  source.name == 'Entire Screen'
-                     ? captureImg
-                     : source.name == 'Screen 1'
-                     ? captureImg
-                     : captureImg2,
-                  () => {
-                     // const windowCap = new BrowserWindow({
-                     //   maximizable: false,
-                     //   width: 300,
-                     //   height: 200,
-                     //   modal: true,
-                     //   x: mainScreen.bounds.width - 320,
-                     //   y: mainScreen.bounds.height - 270,
-                     //   autoHideMenuBar: true,
-                     //   frame: false,
-                     // });
+                              ? 'screenshot-1.png'
+                              : 'screenshot-2.png'
+                        }`,
+                     ),
+                     source.name == 'Entire Screen'
+                        ? captureImg
+                        : source.name == 'Screen 1'
+                           ? captureImg
+                           : captureImg2,
+                     () => {
+                        // const windowCap = new BrowserWindow({
+                        //   maximizable: false,
+                        //   width: 300,
+                        //   height: 200,
+                        //   modal: true,
+                        //   x: mainScreen.bounds.width - 320,
+                        //   y: mainScreen.bounds.height - 270,
+                        //   autoHideMenuBar: true,
+                        //   frame: false,
+                        // });
 
-                     if (source.name == 'Entire Screen') {
-                        // windowCap.loadURL(
-                        //   `file://${path.join(__dirname, `/screenshot.html`)}`
-                        // );
-                        const image = source.thumbnail.toDataURL();
-                        win.webContents.send('asynchronous-message', {
-                           image,
-                           keyboard_activities_seconds: keyboard,
-                           mouse_activities_seconds: mouse,
-                           user_id: projectData.userId,
-                        });
-                        keyboard = 0;
-                        mouse = 0;
-                     } else if (source.name == 'Screen 1' || source.name == 'Screen 2') {
-                        // windowCap.loadURL(
-                        //   `file://${path.join(__dirname, `/multiscreenshots.html`)}`
-                        // );
-                        const image = source.thumbnail.toDataURL();
-                        source.name == 'Screen 1'
-                           ? win.webContents.send('asynchronous-message', {
-                                image,
-                                keyboard_activities_seconds: keyboard,
-                                mouse_activities_seconds: mouse,
-                                user_id: projectData.userId,
-                             })
-                           : win.webContents.send('asynchronous-message', {
-                                image,
-                                keyboard_activities_seconds: keyboard,
-                                mouse_activities_seconds: mouse,
-                                second_screenshot: true,
-                                user_id: projectData.userId,
-                             });
-                        keyboard = 0;
-                        mouse = 0;
-                     }
-                     setTimeout(() => {
-                        // windowCap.close();
-                        fsExtra.removeSync(
-                           `c:/images/screenshots/${
-                              source.name == 'Entire Screen'
-                                 ? 'screenshot-1.png'
-                                 : source.name == 'Screen 1'
-                                 ? 'screenshot-1.png'
-                                 : 'screenshot-2.png'
-                           }`,
-                        );
-                     }, 5000);
-                  },
-               );
+                        if (source.name == 'Entire Screen') {
+                           // windowCap.loadURL(
+                           //   `file://${path.join(__dirname, `/screenshot.html`)}`
+                           // );
+                           const image = source.thumbnail.toDataURL();
+                           win.webContents.send('asynchronous-message', {
+                              image,
+                              keyboard_activities_seconds: keyboard,
+                              mouse_activities_seconds: mouse,
+                              user_id: projectData.userId,
+                           });
+                           keyboard = 0;
+                           mouse = 0;
+                        } else if (source.name == 'Screen 1' || source.name == 'Screen 2') {
+                           // windowCap.loadURL(
+                           //   `file://${path.join(__dirname, `/multiscreenshots.html`)}`
+                           // );
+                           const image = source.thumbnail.toDataURL();
+                           source.name == 'Screen 1'
+                              ? win.webContents.send('asynchronous-message', {
+                                 image,
+                                 keyboard_activities_seconds: keyboard,
+                                 mouse_activities_seconds: mouse,
+                                 user_id: projectData.userId,
+                              })
+                              : win.webContents.send('asynchronous-message', {
+                                 image,
+                                 keyboard_activities_seconds: keyboard,
+                                 mouse_activities_seconds: mouse,
+                                 second_screenshot: true,
+                                 user_id: projectData.userId,
+                              });
+                           keyboard = 0;
+                           mouse = 0;
+                        }
+                        setTimeout(() => {
+                           try {
+                              // windowCap.close();
+                              fsExtra.removeSync(
+                                 `c:/images/screenshots/${source.name == 'Entire Screen'
+                                    ? 'screenshot-1.png'
+                                    : source.name == 'Screen 1'
+                                       ? 'screenshot-1.png'
+                                       : 'screenshot-2.png'
+                                 }`,
+                              );
+                           } catch (err) {
+                              console.log(err);
+                           }
+                        }, 5000);
+                     },
+                  );
+               } catch (err) {
+                  console.log(err);
+               }
             }, 20);
          });
       });

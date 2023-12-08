@@ -85,8 +85,14 @@
             opacity: 0.8;
         }
 
-        .button.yes {background-color: #3971FF;}
-        .button.no {background-color: #e7e7e7; color: black;}
+        .button.yes {
+            background-color: #3971FF;
+        }
+
+        .button.no {
+            background-color: #e7e7e7;
+            color: black;
+        }
     </style>
 
 </head>
@@ -172,16 +178,20 @@
 
         function startTimer() {
             timerInterval = setInterval(() => {
-                timePassed = timePassed += 1;
-                timeLeft = TIME_LIMIT - timePassed;
-                document.getElementById("base-timer-label").innerHTML = formatTime(
-                    timeLeft
-                );
-                setCircleDasharray();
-                setRemainingPathColor(timeLeft);
+                try {
+                    timePassed = timePassed += 1;
+                    timeLeft = TIME_LIMIT - timePassed;
+                    document.getElementById("base-timer-label").innerHTML = formatTime(
+                        timeLeft
+                    );
+                    setCircleDasharray();
+                    setRemainingPathColor(timeLeft);
 
-                if (timeLeft === 0) {
-                    onTimesUp();
+                    if (timeLeft === 0) {
+                        onTimesUp();
+                    }
+                } catch (error) {
+                    console.log(error);
                 }
             }, 1000);
         }
