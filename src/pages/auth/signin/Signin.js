@@ -17,6 +17,7 @@ import axiosInstance from '../../../utils/axios-instance';
 import LoadingButton from '@mui/lab/LoadingButton';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
+import moment from 'moment';
 
 const useStyles = makeStyles((theme) => ({
    root: {
@@ -71,6 +72,7 @@ const Signin = (props) => {
                application_type: 'desktop',
                email_address: emailAddress,
                password: password,
+               timezone_offset: moment().utcOffset()
             },
          })
          .catch((error) => {
