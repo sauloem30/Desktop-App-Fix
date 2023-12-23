@@ -136,8 +136,17 @@ const TimeTracker = () => {
 
    const getTotalWorkedThisWeek = async () => {
       const userId = localStorage.getItem('userId');
-      const startOfWeek = moment().startOf('week').utc().format('YYYY-MM-DD HH:mm:ss');
-      const endOfWeek = moment().endOf('week').utc().format('YYYY-MM-DD HH:mm:ss');
+      const startOfWeekLocal = moment().startOf('week');
+      const endOfWeekLocal = moment().endOf('week');
+      // check if startOfWeek is sunday, if yes, then add 1 day to startOfWeek to make it monday
+      if (moment(startOfWeekLocal).format('dddd') === 'Sunday') {
+         startOfWeekLocal.add(1, 'days');
+         endOfWeekLocal.add(1, 'days');
+      }
+
+      const startOfWeek = startOfWeekLocal.utc().format('YYYY-MM-DD HH:mm:ss');
+      const endOfWeek = endOfWeekLocal.utc().format('YYYY-MM-DD HH:mm:ss');
+
       const { data } = await axiosInstance.get(
          `/timelog/total-weekly-hours?user_id=${userId}&start_date=${startOfWeek}&end_date=${endOfWeek}`,
       );
@@ -161,6 +170,14 @@ const TimeTracker = () => {
          setIsLoading(true);
          const { id, name, daily_limit_by_minute } = project;
          setIsLimitReached(false);
+
+         const totalDuration = await getTotalWorkedThisWeek();
+
+         if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
+            setIsLimitReached(true);
+            return;
+         }
+
          const returned_data = await handlePostTimeLog(
             id,
             userId,
@@ -184,13 +201,14 @@ const TimeTracker = () => {
             window.electronApi.send('project-started');
             let filteredProject = projects.filter((item, i) => item.id === id);
             if (filteredProject) {
-               const totalDuration = await getTotalWorkedThisWeek();
+               
 
                filteredProject[0].time = returned_data.data.project_data[0].time;
                setCurrentTimer((state) => (state += parseInt(filteredProject[0].time)));
                const startTime = moment().utc().format('YYYY-MM-DD HH:mm:ss');
                let subtotalToday = totalToday;
                let filteredProjectTimeTotal = parseInt(filteredProject[0].time);
+               let internalCounter = 0;
                interval = setInterval(() => {
                   try {
                      // handle auto out when midnight is reached
@@ -200,7 +218,7 @@ const TimeTracker = () => {
                         subtotalToday = 0;
                         filteredProjectTimeTotal = 0;
                         setIsReloadApp(true);
-                     } else if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
+                     } else if (weeklyLimitInSeconds > 0 && (totalDuration + internalCounter) >= weeklyLimitInSeconds) {
                         setIsLimitReached(true);
                         handlePause(filteredProject[0].id, returned_data.data.id);
                      } else {
@@ -210,13 +228,13 @@ const TimeTracker = () => {
                         setCurrentTimer(filteredProjectTimeTotal + timeDiff);
                         // setTotalToday(subtotalToday + timeDiff);
                         filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
-                        setTotalWorkedThisWeekInSeconds((state) => state + timeDiff);
 
                         // get total today
                         let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
                         setTotalToday(parseInt(projectsTime));
                      }
 
+                     internalCounter++;
                      setCurrentSession((state) => state + 1);
                   } catch (error) {
                      console.log(error);
@@ -569,11 +587,7 @@ const TimeTracker = () => {
                                              {activeProjectId !== project.id ? (
                                                 <Box
                                                    onClick={async () => {
-                                                      weeklyLimitInSeconds > 0 &&
-                                                         totalWorkedThisWeekInSeconds >=
-                                                         weeklyLimitInSeconds
-                                                         ? handleLimitReached()
-                                                         : await handleProjectStart(project);
+                                                      await handleProjectStart(project);
                                                    }}>
                                                    {<StartIcon />}
                                                 </Box>
