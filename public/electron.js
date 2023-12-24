@@ -15,12 +15,11 @@ const logger = require('./logger');
 let ActivityTrackerInterval = '';
 let ActivityFlushInterval = '';
 let CaptureSSinterval = '';
-let CaptureTimeout = '';
 let CaptureMouseActivity = '';
 let keyboard = 0;
 let mouse = 0;
 let projectStart = false;
-let lastActivity = undefined;
+let lastAppActivity = undefined;
 let activityBuffer = [];
 
 const {
@@ -253,11 +252,10 @@ const handlePause = async () => {
    clearInterval(ActivityTrackerInterval);
    clearInterval(ActivityFlushInterval);
    clearInterval(CaptureSSinterval);
-   clearTimeout(CaptureTimeout);
    clearInterval(CaptureMouseActivity);
    idlepopup = null;
    projectStart = false;
-   lastActivity = undefined;
+   lastAppActivity = undefined;
    keyboard = 0;
    mouse = 0;
    uIOhook.stop();
@@ -285,71 +283,42 @@ ipcMain.on('idle-detected-notworking', async (event, data) => {
    idlepopup.destroy();
 });
 
+/*
+   sample data received from src
+   data = {
+      id: 1,
+      screenshot_tracking: true,
+      app_website_tracking: true,
+      productivity_tracking: true,
+   }
+*/
 ipcMain.on('project-started', async (event, data) => {
    projectStart = true;
    uIOhook.start();
    logger.log('User Clocked IN');
 
-   CaptureTimeout = setTimeout(() => {
-      try {
-         captureFunction();
-      } catch (err) {
-         console.log(err);
-      }
-   }, getRandomInt(30000, 19000));
-   CaptureMouseActivity = setInterval(() => {
-      try {
-         // if (powerMonitor.getSystemIdleTime() === 1200) {
-         //   win.webContents.send("SystemIdleTime", powerMonitor.getSystemIdleTime());
-         // }
+   // need to re-work the database schema for this, since currently productivy data are stored in every screenshots
+   // // productivty tracking
+   // if (data.productivity_tracking) {
+   //    CaptureMouseActivity = setInterval(executeActivityCapture, 1000);
+   // }
 
-         win.webContents.send('SystemIdleTime', powerMonitor.getSystemIdleTime());
+   // screenshot tracking
+   if (data.screenshot_tracking) {
+      // takes initial screenshot after 30 seconds
+      setTimeout(executeScreenshotCapture, 30000);
+      // continues screenshot capture/tracking every 3.33 minutes
+      CaptureSSinterval = setInterval(executeScreenshotCapture, 199998);
 
-         if (hasMouseActivity && hasKeyboardActivity) {
-            mouse++;
-            hasMouseActivity = false;
-            hasKeyboardActivity = false;
-         } else if (hasMouseActivity) {
-            mouse++;
-            hasMouseActivity = false;
-         } else if (hasKeyboardActivity) {
-            keyboard++;
-            hasKeyboardActivity = false;
-         }
-      } catch (error) {
-         logger.log(error);
-      }
-   }, 1000);
+      // productivty tracking, currently its dependent to screenshot tracking
+      // once we fix the database schema, we can remove this or move it outside of screenshot tracking condition
+      CaptureMouseActivity = setInterval(executeActivityCapture, 1000);
+   }
 
-   CaptureSSinterval = setInterval(() => {
-      CaptureTimeout = setTimeout(() => {
-         try {
-            captureFunction();
-         } catch (err) {
-            console.log(err);
-         }
-      }, getRandomInt(10000, 199980));
-   }, 199998);
-
-   ActivityTrackerInterval = setInterval(() => {
-      try {
-         if (!projectData?.projectId) return;
-
-         const currentApp = activeWindow();
-         const currentActivity = {
-            user_id: projectData?.userId,
-            project_id: projectData?.projectId,
-            application_name: currentApp?.info?.name ?? 'Unknown App'
-         };
-
-         if (lastActivity?.application_name !== currentActivity?.application_name) {
-            axios.post(`${host}/api/application-usage/upload2`, { currentActivity });
-            lastActivity = currentActivity;
-         }
-      } catch (err) {
-         logger.log(err);
-      }
-   }, 5000); // 5 seconds
+   // app activity tracking
+   if (data.app_website_tracking) {
+      ActivityTrackerInterval = setInterval(executeAppActivityCapture, 5000);
+   }
 
    win.webContents.executeJavaScript('localStorage.getItem("projectData");', true).then((result) => {
       projectData = JSON.parse(result)[0];
@@ -386,6 +355,54 @@ uIOhook.on('wheel', (e) => {
       hasMouseActivity = true;
    }
 });
+
+var executeAppActivityCapture = () => {
+   try {
+      if (!projectData?.projectId) return;
+
+      const currentApp = activeWindow();
+      const currentAppActivity = {
+         user_id: projectData?.userId,
+         project_id: projectData?.projectId,
+         application_name: currentApp?.info?.name ?? 'Unknown App'
+      };
+
+      if (lastAppActivity?.application_name !== currentAppActivity?.application_name) {
+         axios.post(`${host}/api/application-usage/upload2`, { currentAppActivity });
+         lastAppActivity = currentAppActivity;
+      }
+   } catch (err) {
+      logger.log(err);
+   }
+}
+
+var executeActivityCapture = () => {
+   try {
+      win.webContents.send('SystemIdleTime', powerMonitor.getSystemIdleTime());
+
+      if (hasMouseActivity && hasKeyboardActivity) {
+         mouse++;
+         hasMouseActivity = false;
+         hasKeyboardActivity = false;
+      } else if (hasMouseActivity) {
+         mouse++;
+         hasMouseActivity = false;
+      } else if (hasKeyboardActivity) {
+         keyboard++;
+         hasKeyboardActivity = false;
+      }
+   } catch (error) {
+      logger.log(error);
+   }
+}
+
+var executeScreenshotCapture = () => {
+   try {
+      captureFunction();
+   } catch (err) {
+      console.log(err);
+   }
+}
 
 var captureFunction = () => {
    let captureImg;

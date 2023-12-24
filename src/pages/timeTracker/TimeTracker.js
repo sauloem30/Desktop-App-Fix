@@ -37,6 +37,7 @@ let interval;
 let updater;
 const TimeTracker = () => {
    const classes = useStyles();
+   const [userDetails, setUserDetails] = useState({});
    const [projects, setProjects] = useState([]);
    const [activeProjectId, setActiveProjectId] = useState(false); //should be numeric but to make it faster, will retain false for the meantime
    const [isLoading, setIsLoading] = useState(false);
@@ -132,6 +133,7 @@ const TimeTracker = () => {
          `Weekly time tracking limit: ${data?.weeklyLimitInSeconds > 0 ? getHourMin(data?.weeklyLimitInSeconds) : 'None'
          }`,
       );
+      setUserDetails(data?.user);
    };
 
    const getTotalWorkedThisWeek = async () => {
@@ -198,7 +200,7 @@ const TimeTracker = () => {
             clearInterval(interval);
             clearInterval(updater);
             window.electronApi.send('paused');
-            window.electronApi.send('project-started');
+            window.electronApi.send('project-started', userDetails);
             let filteredProject = projects.filter((item, i) => item.id === id);
             if (filteredProject) {
                
