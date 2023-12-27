@@ -297,28 +297,16 @@ ipcMain.on('project-started', async (event, data) => {
    uIOhook.start();
    logger.log('User Clocked IN');
 
-   // need to re-work the database schema for this, since currently productivy data are stored in every screenshots
-   // // productivty tracking
-   // if (data.productivity_tracking) {
-   //    CaptureMouseActivity = setInterval(executeActivityCapture, 1000);
-   // }
+   // takes initial screenshot after 30 seconds
+   setTimeout(executeScreenshotCapture, 30000);
+   // continues screenshot capture/tracking every 3.33 minutes
+   CaptureSSinterval = setInterval(executeScreenshotCapture, 199998);
 
-   // screenshot tracking
-   if (data.screenshot_tracking) {
-      // takes initial screenshot after 30 seconds
-      setTimeout(executeScreenshotCapture, 30000);
-      // continues screenshot capture/tracking every 3.33 minutes
-      CaptureSSinterval = setInterval(executeScreenshotCapture, 199998);
-
-      // productivty tracking, currently its dependent to screenshot tracking
-      // once we fix the database schema, we can remove this or move it outside of screenshot tracking condition
-      CaptureMouseActivity = setInterval(executeActivityCapture, 1000);
-   }
+   // productivty tracking, currently its dependent to screenshot tracking
+   CaptureMouseActivity = setInterval(executeActivityCapture, 1000);
 
    // app activity tracking
-   if (data.app_website_tracking) {
-      ActivityTrackerInterval = setInterval(executeAppActivityCapture, 5000);
-   }
+   ActivityTrackerInterval = setInterval(executeAppActivityCapture, 5000);
 
    win.webContents.executeJavaScript('localStorage.getItem("projectData");', true).then((result) => {
       projectData = JSON.parse(result)[0];
