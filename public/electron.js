@@ -11,6 +11,7 @@ const { dialog } = require('electron');
 const DownloadManager = require('electron-download-manager');
 const { autoUpdater } = require('electron-updater');
 const logger = require('./logger');
+const activityTracker = require('./activity-tracker');
 
 let ActivityTrackerInterval = '';
 let ActivityFlushInterval = '';
@@ -37,6 +38,8 @@ let hasMouseActivity = false;
 let hasKeyboardActivity = false;
 
 let host = 'https://app.useklever.com';
+
+let screenshotPath = 'c:/images/screenshots';
 
 DownloadManager.register({
    downloadFolder: app.getPath('downloads') + '/installer',
@@ -249,6 +252,8 @@ function getRandomInt(min, max) {
 const handlePause = async () => {
    logger.log('Application Paused');
 
+   activityTracker.stop();
+
    clearInterval(ActivityTrackerInterval);
    clearInterval(ActivityFlushInterval);
    clearInterval(CaptureSSinterval);
@@ -296,6 +301,10 @@ ipcMain.on('project-started', async (event, data) => {
    projectStart = true;
    uIOhook.start();
    logger.log('User Clocked IN');
+
+   // new activity tracker
+   activityTracker.start(data.userId, data.projectId, host);
+
 
    // takes initial screenshot after 30 seconds
    setTimeout(executeScreenshotCapture, 30000);
@@ -416,13 +425,13 @@ var captureFunction = () => {
             setTimeout(() => {
                try {
                   // create directory when missing
-                  const dir = path.resolve('c:/images/screenshots');
+                  const dir = path.resolve(screenshotPath);
                   if (!fs.existsSync(dir)) {
                      fs.mkdirSync(dir, { recursive: true });
                   }
                   fs.writeFile(
                      path.resolve(
-                        `c:/images/screenshots/${source.name == 'Entire Screen'
+                        `${screenshotPath}/${source.name == 'Entire Screen'
                            ? 'screenshot-1.png'
                            : source.name == 'Screen 1'
                               ? 'screenshot-1.png'
@@ -485,7 +494,7 @@ var captureFunction = () => {
                            try {
                               // windowCap.close();
                               fsExtra.removeSync(
-                                 `c:/images/screenshots/${source.name == 'Entire Screen'
+                                 `${screenshotPath}/${source.name == 'Entire Screen'
                                     ? 'screenshot-1.png'
                                     : source.name == 'Screen 1'
                                        ? 'screenshot-1.png'

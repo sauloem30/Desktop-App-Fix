@@ -190,20 +190,21 @@ const TimeTracker = () => {
          if (returned_data.data?.success) {
             setActiveTimelogId(returned_data.data.id);
             setActiveProjectId(id);
+            const projectData = { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId };
             localStorage.setItem(
                'projectData',
                JSON.stringify([
-                  { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId },
+                  projectData,
                ]),
             );
             setProjectName(name);
             clearInterval(interval);
             clearInterval(updater);
             window.electronApi.send('paused');
-            window.electronApi.send('project-started', userDetails);
+            window.electronApi.send('project-started', { ...userDetails, ...projectData });
             let filteredProject = projects.filter((item, i) => item.id === id);
             if (filteredProject) {
-               
+
 
                filteredProject[0].time = returned_data.data.project_data[0].time;
                setCurrentTimer((state) => (state += parseInt(filteredProject[0].time)));
