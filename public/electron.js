@@ -123,6 +123,16 @@ function createWindow() {
       win.show();
    });
 
+   win.on('close', function (event) {
+      if (projectStart) {
+         // Prevent the window from actually closing
+         event.preventDefault();
+
+         // Minimize the window instead
+         win.minimize();
+      }
+   });
+
    // Open the DevTools.
    if (isDev) {
       win.webContents.openDevTools({ mode: 'detach' });
@@ -229,6 +239,10 @@ const ProcessOut = async () => {
 
 app.on('window-all-closed', async () => {
    if (process.platform !== 'darwin') {
+      if (projectStart) {
+         await handlePause();
+      }
+
       await ProcessOut();
       logger.log('Closing application');
       app.quit();
@@ -268,13 +282,6 @@ const handlePause = async () => {
 
 ipcMain.on('paused', async (event, data) => {
    handlePause();
-});
-
-ipcMain.on('quiteApp', async (event, data) => {
-   win.close();
-   if (process.platform !== 'darwin') {
-      app.quit();
-   }
 });
 
 ipcMain.on('idle-detected', async (event, data) => {
