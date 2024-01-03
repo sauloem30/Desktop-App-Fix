@@ -64,46 +64,6 @@ const TimeTracker = () => {
    const navigate = useNavigate();
    const appVersion = localStorage.getItem('version');
 
-   const postSsData = (newArr) => {
-      let failedSs = [];
-      let onComplete = [];
-      if (newArr && newArr.length) {
-         let failSsToSend = [];
-         if (JSON.parse(localStorage.getItem('failedSS'))) {
-            failSsToSend = JSON.parse(localStorage.getItem('failedSS'));
-         }
-         let arrayToFetch = [...failSsToSend, ...newArr];
-         arrayToFetch.map(async (item) => {
-            let res = {};
-            if (item.second_screenshot) {
-               try {
-                  res = await axiosInstance.post('/screenshots/upload', item, returnId);
-                  setReturnId(res?.data?.return_id);
-                  onComplete.push(res);
-               } catch (err) {
-                  setErrorMessage(err);
-                  onComplete.push(err);
-                  failedSs.push(item);
-               }
-            } else {
-               try {
-                  res = await axiosInstance.post('/screenshots/upload', item);
-                  setReturnId(res?.data?.return_id);
-                  onComplete.push(res);
-               } catch (err) {
-                  setErrorMessage(err);
-                  onComplete.push(err);
-                  failedSs.push(item);
-               }
-            }
-            setIsClearScreenshots(true);
-            localStorage.setItem('screenshot', JSON.stringify([]));
-            localStorage.setItem('failedSS', JSON.stringify(failedSs));
-            setIsClearScreenshots(false);
-         });
-      }
-   };
-
    const getProjectData = async () => {
       const user = localStorage.getItem('userId');
 
@@ -349,36 +309,6 @@ const TimeTracker = () => {
          handleAutoClockIn(user);
       }
    }, [isLoadAuto]);
-
-   useEffect(() => {
-      if (!isClearScreenshots && activeProjectId) {
-         let data = [];
-         if (noEvents < 6) {
-            if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
-               data = JSON.parse(localStorage.getItem('screenshot'));
-               let newArr = data.map((val) => {
-                  if (val.keyboard === 0 && val.mouse === 0) {
-                     setNoEvents((state) => state + 1);
-                  } else {
-                     setNoEvents(0);
-                  }
-                  if (val.loggedTime) {
-                     return { ...val };
-                  } else {
-                     return {
-                        ...val,
-                        generated_at: moment().utc(),
-                        project_id: activeProjectId,
-                     };
-                  }
-               });
-               postSsData(newArr);
-            }
-         } else {
-            handlePause(activeProjectId);
-         }
-      }
-   }, [localStorage.getItem('screenshot'), isClearScreenshots]);
 
    useEffect(() => {
       const checkIdleTime = async () => {

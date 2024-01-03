@@ -11,8 +11,11 @@ let hasMouseActivity = false;
 let hasKeyboardActivity = false;
 let intervalHasActivityCheck;
 let intervalSubmitActivity;
+let numberOfClicks = 0;
+let numberOfKeyPress = 0;
 
 uIOhook.on('keydown', (e) => {
+    numberOfKeyPress++;
     if (!hasKeyboardActivity) {
         hasKeyboardActivity = true;
     }
@@ -36,6 +39,13 @@ uIOhook.on('wheel', (e) => {
     }
 });
 
+uIOhook.on('click', (e) => {
+    numberOfClicks++;
+    if (!hasMouseActivity) {
+        hasMouseActivity = true;
+    }
+});
+
 function submitActivity() {
     // don't submit if there was no activity
     if (productivity_score === 0) return;
@@ -44,6 +54,8 @@ function submitActivity() {
         user_id,
         project_id,
         productivity_score,
+        number_of_clicks: numberOfClicks,
+        number_of_keypress: numberOfKeyPress,
         start_at,
         end_at: moment().utc()
     };
@@ -58,6 +70,8 @@ function submitActivity() {
 
     // reset mouse and keyboard activity
     productivity_score = 0;
+    numberOfClicks = 0;
+    numberOfKeyPress = 0;
     start_at = moment().utc();
 }
 
