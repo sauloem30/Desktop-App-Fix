@@ -1,7 +1,7 @@
 {
   "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
@@ -108,8 +108,8 @@
   },
   "devDependencies": {
     "concurrently": "5.2.0",
-    "electron": "^19.0.1",
-    "electron-builder": "^23.6.0",
+    "electron": "28.1.0",
+    "electron-builder": "24.9.1",
     "wait-on": "5.1.0"
   }
 }

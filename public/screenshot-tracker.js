@@ -1,4 +1,5 @@
 const screenshot = require('screenshot-desktop')
+const { desktopCapturer } = require('electron')
 const moment = require('moment');
 const axios = require('axios');
 
@@ -9,24 +10,32 @@ let start_at;
 let intervalTakeScreenshot;
 
 
+function uploadScreenshot(imgs) {
+    const data = {
+        user_id,
+        project_id,
+        imgs,
+        generated_at: moment().utc()
+    };
+
+    axios.post(`${host}/api/screenshots/v2/upload`, data);
+}
+
 function takeScreenshot() {
     console.log('New Capture function initiated');
-    screenshot.all({format: 'png'}).then((imgs) => {
-        const data = {
-            user_id,
-            project_id,
-            imgs,
-            generated_at: moment().utc()
-        };
 
-        axios.post(`${host}/api/screenshots/v2/upload`, data)
-            .then((res) => {
-                console.log(res.data);
-            })
-            .catch((err) => {
-                console.log(err);
+    desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1280, height: 768 }, })
+        .then((sources) => {
+            const imgs = sources.map((source) => {
+                return source.thumbnail.toPNG();
             });
-    })
+            uploadScreenshot(imgs);
+        })
+        .catch((err) => {
+            // if fails, will try the screenshot-desktop library
+            screenshot.all({ format: 'png' })
+                .then(uploadScreenshot)
+        });
 
     start_at = moment().utc();
 }
