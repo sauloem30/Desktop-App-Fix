@@ -225,6 +225,7 @@ const TimeTracker = () => {
    };
 
    const handlePause = async (projectId, timelogId, isMidnight = false, idleTime = 0) => {
+      localStorage.removeItem('SystemIdleTime');
       setErrorMessage('');
       setCurrentTimer(0);
       setCurrentSession(0);
