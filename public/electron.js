@@ -288,8 +288,9 @@ ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
    }
 */
 ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
-   projectStart = true;
    logger.log('User Clocked IN');
+
+   projectStart = true;
 
    // new activity tracker
    activityTracker.start(data.userId, data.projectId, host);
@@ -316,6 +317,18 @@ ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
 
 ipcMain.on('app_version', (event) => {
    event.sender.send('app_version', { version: app.getVersion() });
+});
+
+// SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
+ipcMain.on('online-status-changed', (event, status) => {
+   if (status) return;
+   const dialogOpts = {
+      type: 'info',
+      buttons: ['Ok'],
+      title: 'No Internet Connection',
+      message: 'Please check your internet connection.',
+   };
+   dialog.showMessageBox(dialogOpts, (response) => { });
 });
 
 var executeAppActivityCapture = () => {
