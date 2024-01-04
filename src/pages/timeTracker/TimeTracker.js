@@ -324,8 +324,8 @@ const TimeTracker = () => {
             window.electronApi.projectIdle({ inactivityTimeoffInSeconds });
          }
       }
-      const removeListner = window.electronApi.onSystemIdleTime(systemIdleTimeHandler);
-      return removeListner
+      const removeListener = window.electronApi.onSystemIdleTime(systemIdleTimeHandler);
+      return removeListener
    }, [inactivityTimeoffInSeconds, activeProjectId]);
 
    useEffect(() => {
