@@ -242,7 +242,7 @@
 
         function isNotWorking(isNotWorking) {
             clearInterval(timerInterval);
-            window.electronApi.send("idle-detected-notworking", isNotWorking);
+            window.electronApi.notWorking(isNotWorking);
         }
 
         btnNo.addEventListener('click', () => {

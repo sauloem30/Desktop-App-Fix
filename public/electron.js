@@ -272,10 +272,10 @@ ipcMain.on(IPCEvents.Idle, async (event, data) => {
 });
 
 ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
-   win.webContents.executeJavaScript(
-      `localStorage.setItem("idle-detected-notworking", "${data ? 'true' : 'false'}");`,
-   );
-   idlepopup.destroy();
+   if (win) {
+      win.webContents.send(IPCEvents.NotWorking, data);
+      idlepopup.destroy();
+   }
 });
 
 /*
