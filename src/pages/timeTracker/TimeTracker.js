@@ -311,7 +311,7 @@ const TimeTracker = () => {
    }, [isLoadAuto]);
 
    useEffect(() => {
-      const systemIdleTimeHandler = (systemIdleTime) => {
+      const systemIdleTimeHandler = (_, systemIdleTime) => {
          if (
             activeProjectId > 0 &&
             inactivityTimeoffInSeconds > 0 &&
