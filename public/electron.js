@@ -13,6 +13,7 @@ const { autoUpdater } = require('electron-updater');
 const logger = require('./logger');
 const activityTracker = require('./activity-tracker');
 const screenshotTracker = require('./screenshot-tracker');
+const { IPCEvents } = require('./ipc-api');
 
 let idleInterval;
 let appActivityTrackerInterval;
@@ -262,15 +263,15 @@ const handlePause = async () => {
    lastAppActivity = undefined;
 };
 
-ipcMain.on('paused', async (event, data) => {
+ipcMain.on(IPCEvents.Paused, async (event, data) => {
    handlePause();
 });
 
-ipcMain.on('idle-detected', async (event, data) => {
+ipcMain.on(IPCEvents.Idle, async (event, data) => {
    if (!idlepopup) showIdlePopup();
 });
 
-ipcMain.on('idle-detected-notworking', async (event, data) => {
+ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
    win.webContents.executeJavaScript(
       `localStorage.setItem("idle-detected-notworking", "${data ? 'true' : 'false'}");`,
    );
@@ -286,7 +287,7 @@ ipcMain.on('idle-detected-notworking', async (event, data) => {
       productivity_tracking: true,
    }
 */
-ipcMain.on('project-started', async (event, data) => {
+ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
    projectStart = true;
    logger.log('User Clocked IN');
 
@@ -302,7 +303,7 @@ ipcMain.on('project-started', async (event, data) => {
    // idle checking interval
    idleInterval = setInterval(() => {
       if (win) {
-         win.webContents.send('SystemIdleTime', powerMonitor.getSystemIdleTime());
+         win.webContents.send(IPCEvents.SystemIdleTime, powerMonitor.getSystemIdleTime());
       }
    }, 1000);
 

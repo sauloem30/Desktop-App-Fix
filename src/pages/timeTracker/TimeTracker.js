@@ -117,7 +117,6 @@ const TimeTracker = () => {
    };
 
    const handleProjectStart = async (project, isMidnight, isResumeLog = false, resumeLogId = null) => {
-      localStorage.removeItem('SystemIdleTime');
       setErrorMessage('');
       const userId = parseInt(localStorage.getItem('userId'));
       if (isLoading === false) {
@@ -160,8 +159,8 @@ const TimeTracker = () => {
             setProjectName(name);
             clearInterval(interval);
             clearInterval(updater);
-            window.electronApi.send('paused');
-            window.electronApi.send('project-started', { ...userDetails, ...projectData });
+            window.electronApi.pauseProject();
+            window.electronApi.startProject({ ...userDetails, ...projectData });
             let filteredProject = projects.filter((item, i) => item.id === id);
             if (filteredProject) {
 
@@ -193,7 +192,8 @@ const TimeTracker = () => {
                         filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
 
                         // get total today
-                        setTotalToday((state) => state + 1);
+                        let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
+                        setTotalToday(parseInt(projectsTime));
                      }
 
                      internalCounter++;
@@ -225,7 +225,6 @@ const TimeTracker = () => {
    };
 
    const handlePause = async (projectId, timelogId, isMidnight = false, idleTime = 0) => {
-      localStorage.removeItem('SystemIdleTime');
       setErrorMessage('');
       setCurrentTimer(0);
       setCurrentSession(0);
@@ -246,12 +245,12 @@ const TimeTracker = () => {
          );
          if (response.data?.success) {
             clearInterval(interval);
-            window.electronApi.send('paused');
+            window.electronApi.pauseProject();
             socket.emit('unregister', { user_id: userId });
          } else {
             setErrorMessage(response.data.error_message);
             clearInterval(interval);
-            window.electronApi.send('paused');
+            window.electronApi.pauseProject();
          }
       }
 
@@ -290,7 +289,7 @@ const TimeTracker = () => {
 
    useEffect(() => {
       const initialLoad = async () => {
-         window.electronApi.send('paused');
+         window.electronApi.pauseProject();
          const user = localStorage.getItem('userId');
 
          await getProjectData();
@@ -310,9 +309,7 @@ const TimeTracker = () => {
    }, [isLoadAuto]);
 
    useEffect(() => {
-      const checkIdleTime = async () => {
-         const systemIdleTime = localStorage.getItem('SystemIdleTime');
-
+      const systemIdleTimeHandler = (systemIdleTime) => {
          if (
             activeProjectId > 0 &&
             inactivityTimeoffInSeconds > 0 &&
@@ -322,11 +319,12 @@ const TimeTracker = () => {
                `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
-            window.electronApi.send('idle-detected', { inactivityTimeoffInSeconds });
+            window.electronApi.projectIdle({ inactivityTimeoffInSeconds });
          }
-      };
-      checkIdleTime();
-   }, [localStorage.getItem('SystemIdleTime'), inactivityTimeoffInSeconds, activeProjectId]);
+      }
+      const removeListner = window.electronApi.onSystemIdleTime(systemIdleTimeHandler);
+      return removeListner
+   }, [inactivityTimeoffInSeconds, activeProjectId]);
 
    useEffect(() => {
       const checkIdleFeedback = async () => {

@@ -1,4 +1,3 @@
-const { contextBridge, ipcRenderer } = require('electron');
-contextBridge.exposeInMainWorld('electronApi', {
-   send: (channel, payload) => ipcRenderer.send(channel, payload),
-});
+const { contextBridge } = require('electron');
+const { electronAPI } = require('./preload')
+contextBridge.exposeInMainWorld('electronApi', electronAPI);
