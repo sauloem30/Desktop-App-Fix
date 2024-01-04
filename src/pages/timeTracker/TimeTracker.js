@@ -193,8 +193,7 @@ const TimeTracker = () => {
                         filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
 
                         // get total today
-                        let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
-                        setTotalToday(parseInt(projectsTime));
+                        setTotalToday((state) => state + 1);
                      }
 
                      internalCounter++;
