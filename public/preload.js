@@ -1,11 +1,16 @@
 const { contextBridge, ipcRenderer } = require('electron');
-contextBridge.exposeInMainWorld('electronApi',
-    {
-        send: (channel, payload) => ipcRenderer.send(channel, payload)
-    }
-)
+const { IPCEvents } = require('./ipc-api');
 
-// localStorage.setItem('screenshot' , JSON.stringify([]));
+const electronAPI = {
+    send: (channel, payload) => ipcRenderer.send(channel, payload),
+    onSystemIdleTime: (callback) => {
+        ipcRenderer.on(IPCEvents.SystemIdleTime, callback);
+        return () => ipcRenderer.removeListener(IPCEvents.SystemIdleTime, callback);
+    },
+    pauseProject: () => ipcRenderer.send(IPCEvents.Paused),
+    startProject: (data) => ipcRenderer.send(IPCEvents.ProjectStarted, data),
+    projectIdle: (data) => ipcRenderer.send(IPCEvents.Idle, data),
+}
 
 ipcRenderer.on('asynchronous-message', (evt, data) => {
     let localdata = []
@@ -24,3 +29,5 @@ ipcRenderer.on('SystemIdleTime', (evt, data) => {
     localStorage.setItem("SystemIdleTime", data)
 });
 
+contextBridge.exposeInMainWorld('electronApi', electronAPI)
+exports.electronAPI = electronAPI
