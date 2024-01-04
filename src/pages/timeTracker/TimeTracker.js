@@ -117,6 +117,7 @@ const TimeTracker = () => {
    };
 
    const handleProjectStart = async (project, isMidnight, isResumeLog = false, resumeLogId = null) => {
+      localStorage.removeItem('SystemIdleTime');
       setErrorMessage('');
       const userId = parseInt(localStorage.getItem('userId'));
       if (isLoading === false) {
