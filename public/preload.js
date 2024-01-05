@@ -14,6 +14,7 @@ const electronAPI = {
     pauseProject: () => ipcRenderer.send(IPCEvents.Paused),
     startProject: (data) => ipcRenderer.send(IPCEvents.ProjectStarted, data),
     projectIdle: (data) => ipcRenderer.send(IPCEvents.Idle, data),
+    changeOnlineStatus: (data) => ipcRenderer.send(IPCEvents.OnlineStatusChanged, data),
     appVersion: async () => {
         let version = await ipcRenderer.invoke(IPCEvents.AppVersion);
         return version;

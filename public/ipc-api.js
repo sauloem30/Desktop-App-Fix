@@ -7,5 +7,6 @@ exports.IPCEvents = {
     AppVersion: "app-version",
     GetFromStore: "get-from-store",
     SetToStore: "set-to-store",
+    OnlineStatusChanged : "online-status-changed"
 };
   

@@ -12,7 +12,7 @@ function App() {
   useEffect(() => {
     // detect internet connection
     const handleChange = (newStatus) => {
-      window?.electronApi?.send('online-status-changed', newStatus);
+      window?.electronApi?.changeOnlineStatus(newStatus);
       setIsOnline(newStatus);
     };
 

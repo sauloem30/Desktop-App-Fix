@@ -7,7 +7,7 @@ const useOnlineStatusCheck = () => {
         // detect internet connection
         const handleChange = (newStatus) => {
             setIsOnline(newStatus);
-            window?.electronApi?.send('online-status-changed', newStatus);
+            window?.electronApi?.changeOnlineStatus(newStatus);
         }
     
         window.addEventListener('online', () => handleChange(true));

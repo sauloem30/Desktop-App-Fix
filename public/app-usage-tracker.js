@@ -3,6 +3,7 @@ const { desktopCapturer, ipcMain } = require('electron')
 const moment = require('moment');
 const axios = require('axios');
 const { activeWindow } = require('@miniben90/x-win');
+const { IPCEvents } = require('./ipc-api');
 
 let host;
 let user_id;
@@ -13,7 +14,7 @@ let onlineStatus = true;
 let offlineData = [];
 let lastAppActivity;
 
-ipcMain.on('online-status-changed', (event, status) => {
+ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
     onlineStatus = status;
 
     if (status && offlineData.length > 0) {

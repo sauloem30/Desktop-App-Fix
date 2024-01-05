@@ -1,7 +1,8 @@
 const { uIOhook } = require('uiohook-napi');
 const moment = require('moment');
 const axios = require('axios');
-const { ipcMain } = require('electron')
+const { ipcMain } = require('electron');
+const { IPCEvents } = require('./ipc-api');
 
 let host;
 let user_id;
@@ -17,7 +18,7 @@ let numberOfKeyPress = 0;
 let onlineStatus = true;
 let offlineData = [];
 
-ipcMain.on('online-status-changed', (event, status) => {
+ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
     onlineStatus = status;
 
     if (status && offlineData.length > 0) {

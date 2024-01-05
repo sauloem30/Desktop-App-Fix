@@ -329,7 +329,7 @@ ipcMain.handle(IPCEvents.AppVersion, () => {
 });
 
 // SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
-ipcMain.on('online-status-changed', (event, status) => {
+ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
    if (status) return;
    const dialogOpts = {
       type: 'info',
