@@ -335,8 +335,7 @@ const TimeTracker = () => {
 
    useEffect(() => {
       if (isLoadAuto) {
-         const user = localStorage.getItem('userId');
-         handleAutoClockIn(user);
+         handleAutoClockIn();
       }
    }, [isLoadAuto]);
 
@@ -431,8 +430,8 @@ const TimeTracker = () => {
       }
    };
 
-   const handleAutoClockIn = async (user) => {
-      const record = await getLatestLogin(user);
+   const handleAutoClockIn = async () => {
+      const record = await getLatestLogin(userId);
       try {
          if (record.err_msg.length === 0 && record.data.length > 0) {
             // handleAutoClockin Here
