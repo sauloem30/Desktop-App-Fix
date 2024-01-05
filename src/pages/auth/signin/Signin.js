@@ -90,8 +90,7 @@ const Signin = (props) => {
          });
       if (response.data.success === true) {
          await window.electronApi.setToStore('isRemember', isRemember)
-         // temporary solution
-         localStorage.setItem('userId', JSON.parse(response.data.user_id));
+         await window.electronApi.setToStore('userId', response.data.user_id)
          setIsLoading(false);
          navigate('/timetracker');
       } else {
@@ -117,7 +116,7 @@ const Signin = (props) => {
 
    const checkSession = async () => {
       const rememberedUser = await window.electronApi.getFromStore("isRemember");
-      const userId = localStorage.getItem('userId');
+      const userId = await window.electronApi.getFromStore("userId");
 
       setIsRemember(rememberedUser ?? false);
 

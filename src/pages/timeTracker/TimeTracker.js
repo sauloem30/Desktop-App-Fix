@@ -84,7 +84,7 @@ const TimeTracker = () => {
    }, [isOnline]);
 
    const getProjectData = async () => {
-      const user = localStorage.getItem('userId');
+      const user = await window.electronApi.getFromStore("userId");
 
       // load accessibilities
       await getAccessibilities();
@@ -104,7 +104,7 @@ const TimeTracker = () => {
    };
 
    const getAccessibilities = async () => {
-      const userId = localStorage.getItem('userId');
+      const userId =  await window.electronApi.getFromStore("userId");
       const { data } = await axiosInstance.get(`/accessibilities/desktop-app?user_id=${userId}`);
       setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
       setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 0);
@@ -116,7 +116,7 @@ const TimeTracker = () => {
    };
 
    const getTotalWorkedThisWeek = async () => {
-      const userId = localStorage.getItem('userId');
+      const userId =  await window.electronApi.getFromStore("userId");
       const startOfWeekLocal = moment().startOf('week');
       const endOfWeekLocal = moment().endOf('week');
       // check if startOfWeek is sunday, if yes, then add 1 day to startOfWeek to make it monday
@@ -140,7 +140,7 @@ const TimeTracker = () => {
          return;
       }
       setErrorMessage('');
-      const userId = parseInt(localStorage.getItem('userId'));
+      const userId =  await window.electronApi.getFromStore("userId");
       if (isLoading === false) {
          // Log out first if clocked in to another project
          if (project.id !== activeProjectId && activeProjectId !== false) {
@@ -322,7 +322,7 @@ const TimeTracker = () => {
    useEffect(() => {
       const initialLoad = async () => {
          window.electronApi.pauseProject();
-         const user = localStorage.getItem('userId');
+         const user =  await window.electronApi.getFromStore("userId");
 
          await getProjectData();
          setUserId(parseInt(user));
@@ -414,8 +414,8 @@ const TimeTracker = () => {
          await handlePause(activeProjectId);
       }
       if (response.data?.success) {
-         window.electronApi.deleteFromStore("isRemember")
-         localStorage.removeItem('userId');
+         await window.electronApi.deleteFromStore("isRemember")
+         await window.electronApi.deleteFromStore("userId")
          navigate('/');
       } else {
          setErrorMessage(response.data.error_message);
