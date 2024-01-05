@@ -26,7 +26,11 @@ const electronAPI = {
     setToStore: async (key, value) => {
         const storeData = await ipcRenderer.invoke(IPCEvents.SetToStore, key, value);
         return storeData;
-    },   
+    }, 
+    deleteFromStore: async (key) => {
+        let isDeleted = await ipcRenderer.invoke(IPCEvents.DeleteFromStore, key);
+        return isDeleted;
+    }, 
 }
 
 contextBridge.exposeInMainWorld('electronApi', electronAPI)

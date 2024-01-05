@@ -89,8 +89,7 @@ const Signin = (props) => {
             setIsLoading(false);
          });
       if (response.data.success === true) {
-         localStorage.setItem('isRemember', JSON.parse(isRemember));
-
+         await window.electronApi.setToStore('isRemember', isRemember)
          // temporary solution
          localStorage.setItem('userId', JSON.parse(response.data.user_id));
          setIsLoading(false);
@@ -117,10 +116,10 @@ const Signin = (props) => {
    };
 
    const checkSession = async () => {
-      const rememberedUser = JSON.parse(localStorage.getItem('isRemember'));
+      const rememberedUser = await window.electronApi.getFromStore("isRemember");
       const userId = localStorage.getItem('userId');
 
-      setIsRemember(JSON.parse(localStorage.getItem('isRemember')));
+      setIsRemember(rememberedUser ?? false);
 
       if (rememberedUser) {
          // const responseJSON = await axiosInstance.request({

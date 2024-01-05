@@ -287,6 +287,11 @@ ipcMain.handle(IPCEvents.GetFromStore, (_event, key) => {
    SecretsStore.set(key, value);
    return value;
  });
+
+ ipcMain.handle(IPCEvents.DeleteFromStore, (_event, key) => {
+   SecretsStore.delete(key);
+   return true;
+ });
 /*
    sample data received from src
    data = {

@@ -414,7 +414,7 @@ const TimeTracker = () => {
          await handlePause(activeProjectId);
       }
       if (response.data?.success) {
-         localStorage.removeItem('isRemember');
+         window.electronApi.deleteFromStore("isRemember")
          localStorage.removeItem('userId');
          navigate('/');
       } else {
