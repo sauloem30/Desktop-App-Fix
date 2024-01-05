@@ -61,10 +61,9 @@ const TimeTracker = () => {
    const [weeklyLimitInSeconds, setWeeklyLimitInSeconds] = useState(0);
    const [inactivityTimeoffInSeconds, setInactivityTimeoffInSeconds] = useState(0);
    const [totalWorkedThisWeekInSeconds, setTotalWorkedThisWeekInSeconds] = useState(0);
-
+   const [ appVersion, setAppVersion ] = useState();
    const anchorRef = useRef(null);
    const navigate = useNavigate();
-   const appVersion = localStorage.getItem('version');
 
    const netStatusRef = useRef(null);
 
@@ -378,6 +377,14 @@ const TimeTracker = () => {
       return removeListener
    }, [inactivityTimeoffInSeconds, activeProjectId]);
 
+
+   useEffect(() => {
+      const getAppVersion = async () => {
+         let version = await window.electronApi.appVersion(); 
+         setAppVersion(version)
+      }
+      getAppVersion();
+   },[])
 
    const handleLimitReached = () => {
       setIsLimitReached(true);

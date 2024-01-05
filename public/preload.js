@@ -2,11 +2,6 @@ const { contextBridge, ipcRenderer } = require('electron');
 const { IPCEvents } = require('./ipc-api');
 
 const electronAPI = {
-    send: (channel, payload) => ipcRenderer.send(channel, payload),
-    on: (channel, callback) => {
-        ipcRenderer.on(channel, callback);
-        return () => ipcRenderer.removeListener(channel, callback);
-    },
     onSystemIdleTime: (callback) => {
         ipcRenderer.on(IPCEvents.SystemIdleTime, callback);
         return () => ipcRenderer.removeListener(IPCEvents.SystemIdleTime, callback);
@@ -19,24 +14,19 @@ const electronAPI = {
     pauseProject: () => ipcRenderer.send(IPCEvents.Paused),
     startProject: (data) => ipcRenderer.send(IPCEvents.ProjectStarted, data),
     projectIdle: (data) => ipcRenderer.send(IPCEvents.Idle, data),
+    appVersion: async () => {
+        let version = await ipcRenderer.invoke(IPCEvents.AppVersion);
+        return version;
+    },
+    getFromStore: async (key) => {
+        const storeData = await ipcRenderer.invoke(IPCEvents.GetFromStore, key);
+        return storeData;
+    },
+    setToStore: async (key, value) => {
+        const storeData = await ipcRenderer.invoke(IPCEvents.SetToStore, key, value);
+        return storeData;
+    },   
 }
-
-ipcRenderer.on('asynchronous-message', (evt, data) => {
-    let localdata = []
-    if (JSON.parse(localStorage.getItem('screenshot'))) {
-        localdata = JSON.parse(localStorage.getItem('screenshot'))
-    }
-    localdata.push(data)
-    localStorage.setItem("screenshot", JSON.stringify(localdata));
-});
-
-ipcRenderer.on('auto-out', (evt, data) => {
-    localStorage.setItem("autoLoad", JSON.stringify({is_auto: true}))
-});
-
-ipcRenderer.on('SystemIdleTime', (evt, data) => {
-    localStorage.setItem("SystemIdleTime", data)
-});
 
 contextBridge.exposeInMainWorld('electronApi', electronAPI)
 exports.electronAPI = electronAPI
