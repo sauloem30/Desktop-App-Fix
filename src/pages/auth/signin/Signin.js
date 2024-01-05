@@ -18,6 +18,7 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import moment from 'moment';
+import AppContext from '../../../AppContext';
 
 const useStyles = makeStyles((theme) => ({
    root: {
@@ -49,6 +50,8 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 const Signin = (props) => {
+   const { isOnline } = React.useContext(AppContext);
+
    const classes = useStyles();
    const textRef = useRef(null);
    let navigate = useNavigate();
@@ -62,6 +65,11 @@ const Signin = (props) => {
    const location = useLocation();
 
    const handleLogin = async (event) => {
+      if (!isOnline) {
+         setErrorMessage('Please check your internet connection.');
+         return;
+      }
+
       setIsLoading(true);
       setErrorMessage('');
       const response = await axiosInstance
@@ -262,33 +270,6 @@ const Signin = (props) => {
                            </Typography>
                         </Box>
                         <div style={{ display: 'flex', justifyContent: 'center', marginTop: '-20px' }}>
-                           {/* <CustomButton
-                              text='Cancel'
-                              color='#000000'
-                              bgColor='#E8E6F8'
-                              borderRadius='4px'
-                              width='120px'
-                              onClick={() => {
-                                 window.electronApi.send('quiteApp');
-                              }}
-                              marginRight='32px'
-                           /> */}
-
-                           {/* <LoadingButton
-                              color='secondary'
-                              style={{
-                                 backgroundColor: '#4262FF',
-                                 width: '120px',
-                                 color: 'white',
-                                 textTransform: 'none',
-                              }}
-                              onClick={handleLogin}
-                              loading={isLoading}
-                              loadingPosition='end'
-                              endIcon={' '}
-                              variant='contained'>
-                              Sign In
-                           </LoadingButton> */}
                            <LoadingButton
                               fullWidth
                               type='submit'

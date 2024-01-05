@@ -7,7 +7,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import moment from 'moment';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import {
    getProjects,
    handlePostTimeLog,
@@ -30,12 +30,14 @@ import { useNavigate } from 'react-router-dom';
 import log from 'electron-log';
 
 import { io } from 'socket.io-client';
+import AppContext from '../../AppContext';
 
 const socket = io('https://app.useklever.com'); //io("http://localhost:3000");
 
 let interval;
 let updater;
 const TimeTracker = () => {
+   const { isOnline } = useContext(AppContext);
    const classes = useStyles();
    const [userDetails, setUserDetails] = useState({});
    const [projects, setProjects] = useState([]);
@@ -63,6 +65,24 @@ const TimeTracker = () => {
    const anchorRef = useRef(null);
    const navigate = useNavigate();
    const appVersion = localStorage.getItem('version');
+
+   const netStatusRef = useRef(null);
+
+   useEffect(() => {
+      if (isOnline) {
+         clearTimeout(netStatusRef.current);
+         setErrorMessage('');
+      } else {
+         if (activeProjectId) {
+            setErrorMessage('You are offline. Please check your internet connection. The tracker will automatically pause in 5 minutes.');
+            netStatusRef.current = setTimeout(() => {
+               handlePause(activeProjectId, activeTimelogId);
+            }, 300000);
+         } else {
+            setErrorMessage('You are offline. Please check your internet connection.');
+         }
+      }
+   }, [isOnline]);
 
    const getProjectData = async () => {
       const user = localStorage.getItem('userId');
@@ -116,7 +136,10 @@ const TimeTracker = () => {
       return data?.duration || 0;
    };
 
-   const handleProjectStart = async (project, isMidnight, isResumeLog = false, resumeLogId = null) => { 
+   const handleProjectStart = async (project, isMidnight, isResumeLog = false, resumeLogId = null) => {
+      if (!isOnline) {
+         return;
+      }
       setErrorMessage('');
       const userId = parseInt(localStorage.getItem('userId'));
       if (isLoading === false) {
@@ -224,6 +247,17 @@ const TimeTracker = () => {
    };
 
    const handlePause = async (projectId, timelogId, isMidnight = false, idleTime = 0) => {
+      if (!isOnline) {
+         clearInterval(interval);
+         setCurrentTimer(0);
+         setCurrentSession(0);
+         setProjectName('Select a project');
+         setActiveProjectId(false);
+         setErrorMessage('You are offline. Please check your internet connection.');
+         window.electronApi.pauseProject();
+         return;
+      }
+
       setErrorMessage('');
       setCurrentTimer(0);
       setCurrentSession(0);

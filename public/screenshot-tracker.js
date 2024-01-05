@@ -1,5 +1,5 @@
 const screenshot = require('screenshot-desktop')
-const { desktopCapturer } = require('electron')
+const { desktopCapturer, ipcMain } = require('electron')
 const moment = require('moment');
 const axios = require('axios');
 
@@ -8,6 +8,19 @@ let user_id;
 let project_id;
 let start_at;
 let intervalTakeScreenshot;
+let onlineStatus = true;
+let offlineData = [];
+
+ipcMain.on('online-status-changed', (event, status) => {
+    onlineStatus = status;
+
+    if (status && offlineData.length > 0) {
+        offlineData.forEach((offlineData) => {
+            axios.post(`${host}/api/screenshots/v2/upload`, offlineData);
+        });
+        offlineData = [];
+    }
+});
 
 
 function uploadScreenshot(imgs) {
@@ -18,7 +31,12 @@ function uploadScreenshot(imgs) {
         generated_at: moment().utc()
     };
 
-    axios.post(`${host}/api/screenshots/v2/upload`, data);
+    if (!onlineStatus) {
+        offlineData.push(data);
+        return;
+    } else {
+        axios.post(`${host}/api/screenshots/v2/upload`, data);
+    }
 }
 
 function takeScreenshot() {

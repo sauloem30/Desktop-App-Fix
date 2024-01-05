@@ -1,6 +1,7 @@
 const { uIOhook } = require('uiohook-napi');
 const moment = require('moment');
 const axios = require('axios');
+const { ipcMain } = require('electron')
 
 let host;
 let user_id;
@@ -13,6 +14,19 @@ let intervalHasActivityCheck;
 let intervalSubmitActivity;
 let numberOfClicks = 0;
 let numberOfKeyPress = 0;
+let onlineStatus = true;
+let offlineData = [];
+
+ipcMain.on('online-status-changed', (event, status) => {
+    onlineStatus = status;
+
+    if (status && offlineData.length > 0) {
+        offlineData.forEach((offlineData) => {
+            axios.post(`${host}/api/timelog/activity`, offlineData);
+        });
+        offlineData = [];
+    }
+});
 
 uIOhook.on('keydown', (e) => {
     numberOfKeyPress++;
@@ -46,11 +60,8 @@ uIOhook.on('click', (e) => {
     }
 });
 
-function submitActivity() {
-    // don't submit if there was no activity
-    if (productivity_score === 0) return;
-
-    const currentActivity = {
+function uploadData() {
+    const data = {
         user_id,
         project_id,
         productivity_score,
@@ -60,13 +71,19 @@ function submitActivity() {
         end_at: moment().utc()
     };
 
-    axios.post(`${host}/api/timelog/activity`, currentActivity)
-        .then((res) => {
-            console.log(res.data);
-        })
-        .catch((err) => {
-            console.log(err);
-        });
+    if (!onlineStatus) {
+        offlineData.push(data);
+        return;
+    } else {
+        axios.post(`${host}/api/timelog/activity`, data);
+    }
+}
+
+function submitActivity() {
+    // don't submit if there was no activity
+    if (productivity_score === 0) return;
+
+    uploadData();
 
     // reset mouse and keyboard activity
     productivity_score = 0;
