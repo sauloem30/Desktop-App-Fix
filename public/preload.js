@@ -11,6 +11,11 @@ const electronAPI = {
         ipcRenderer.on(IPCEvents.SystemIdleTime, callback);
         return () => ipcRenderer.removeListener(IPCEvents.SystemIdleTime, callback);
     },
+    onNotWorking: (callback) => {
+        ipcRenderer.on(IPCEvents.NotWorking, callback);
+        return () => ipcRenderer.removeListener(IPCEvents.NotWorking, callback);
+    },
+    notWorking: (data) => ipcRenderer.send(IPCEvents.NotWorking, data),
     pauseProject: () => ipcRenderer.send(IPCEvents.Paused),
     startProject: (data) => ipcRenderer.send(IPCEvents.ProjectStarted, data),
     projectIdle: (data) => ipcRenderer.send(IPCEvents.Idle, data),

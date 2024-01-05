@@ -360,10 +360,8 @@ const TimeTracker = () => {
    }, [inactivityTimeoffInSeconds, activeProjectId]);
 
    useEffect(() => {
-      const checkIdleFeedback = async () => {
-         const isNotWorking = localStorage.getItem('idle-detected-notworking');
-
-         if (activeProjectId > 0 && isNotWorking == 'true') {
+      const checkIdleFeedback = async (_, isNotWorking) => {
+         if (activeProjectId > 0 && isNotWorking == true) {
             await handlePause(activeProjectId, activeTimelogId, false, inactivityTimeoffInSeconds);
             setErrorMessage(
                `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
@@ -371,13 +369,14 @@ const TimeTracker = () => {
             );
             localStorage.removeItem('idle-detected-notworking');
             await getProjectData();
-         } else if (activeProjectId > 0 && isNotWorking == 'false') {
+         } else if (activeProjectId > 0 && isNotWorking == false) {
             setErrorMessage('');
             localStorage.removeItem('idle-detected-notworking');
          }
       };
-      checkIdleFeedback();
-   }, [localStorage.getItem('idle-detected-notworking'), inactivityTimeoffInSeconds, activeProjectId]);
+      const removeListener = window.electronApi.onNotWorking(checkIdleFeedback);
+      return removeListener
+   }, [inactivityTimeoffInSeconds, activeProjectId]);
 
 
    const handleLimitReached = () => {
