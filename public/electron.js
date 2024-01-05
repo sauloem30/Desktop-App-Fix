@@ -14,6 +14,7 @@ const logger = require('./logger');
 const activityTracker = require('./activity-tracker');
 const screenshotTracker = require('./screenshot-tracker');
 const { IPCEvents } = require('./ipc-api');
+const { SecretsStore } = require("./secrets-store")
 
 let idleInterval;
 let appActivityTrackerInterval;
@@ -99,7 +100,6 @@ function createWindow() {
    });
    win.webContents.setBackgroundThrottling(false);
 
-   win.webContents.executeJavaScript(`localStorage.setItem("version", "${app.getVersion()}");`);
 
    win.webContents.executeJavaScript(`document.title="Klever ${app.getVersion()}";`);
 
@@ -278,6 +278,15 @@ ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
    }
 });
 
+ipcMain.handle(IPCEvents.GetFromStore, (_event, key) => {
+   const data = SecretsStore.get(key);
+   return data;
+ });
+
+ ipcMain.handle(IPCEvents.SetToStore, (_event, key, value) => {
+   SecretsStore.set(key, value);
+   return value;
+ });
 /*
    sample data received from src
    data = {
@@ -315,8 +324,8 @@ ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
    });
 });
 
-ipcMain.on('app_version', (event) => {
-   event.sender.send('app_version', { version: app.getVersion() });
+ipcMain.handle(IPCEvents.AppVersion, () => {
+   return app.getVersion();
 });
 
 // SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
