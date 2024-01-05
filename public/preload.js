@@ -3,6 +3,10 @@ const { IPCEvents } = require('./ipc-api');
 
 const electronAPI = {
     send: (channel, payload) => ipcRenderer.send(channel, payload),
+    on: (channel, callback) => {
+        ipcRenderer.on(channel, callback);
+        return () => ipcRenderer.removeListener(channel, callback);
+    },
     onSystemIdleTime: (callback) => {
         ipcRenderer.on(IPCEvents.SystemIdleTime, callback);
         return () => ipcRenderer.removeListener(IPCEvents.SystemIdleTime, callback);
