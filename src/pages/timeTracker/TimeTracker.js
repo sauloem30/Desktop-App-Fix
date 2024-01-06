@@ -172,12 +172,7 @@ const TimeTracker = () => {
             setActiveTimelogId(returned_data.data.id);
             setActiveProjectId(id);
             const projectData = { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId };
-            localStorage.setItem(
-               'projectData',
-               JSON.stringify([
-                  projectData,
-               ]),
-            );
+            await window.electronApi.setToStore("projectData", [projectData ])
             setProjectName(name);
             clearInterval(interval);
             clearInterval(updater);
@@ -264,7 +259,7 @@ const TimeTracker = () => {
       setProjectName('Select a project');
 
       clearInterval(interval);
-      localStorage.setItem('projectData', JSON.stringify([]));
+      await window.electronApi.setToStore("projectData", [])
       let project = projects.filter((item) => item.id === projectId);
       if (project) {
          setActiveProjectId(false);
@@ -365,11 +360,9 @@ const TimeTracker = () => {
                `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
-            localStorage.removeItem('idle-detected-notworking');
             await getProjectData();
          } else if (activeProjectId > 0 && isNotWorking == false) {
             setErrorMessage('');
-            localStorage.removeItem('idle-detected-notworking');
          }
       };
       const removeListener = window.electronApi.onNotWorking(checkIdleFeedback);

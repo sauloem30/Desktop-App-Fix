@@ -322,11 +322,10 @@ ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
       }
    }, 1000);
 
-   win.webContents.executeJavaScript('localStorage.getItem("projectData");', true).then((result) => {
-      projectData = JSON.parse(result)[0];
-      logger.log('  Project Details: ' + JSON.stringify(JSON.parse(result)[0]));
-      logger.log('  ------------------------------ ');
-   });
+   const storeProjectData = await SecretsStore.get("projectData");
+   projectData = storeProjectData.at(0);
+   logger.log('  Project Details: ' + JSON.stringify(projectData));
+   logger.log('  ------------------------------ ');
 });
 
 ipcMain.handle(IPCEvents.AppVersion, () => {
