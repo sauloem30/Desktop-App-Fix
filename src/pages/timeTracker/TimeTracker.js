@@ -7,7 +7,7 @@ import ListItemText from '@mui/material/ListItemText';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import moment from 'moment';
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useContext } from 'react';
 import {
    getProjects,
    handlePostTimeLog,
@@ -30,13 +30,16 @@ import { useNavigate } from 'react-router-dom';
 import log from 'electron-log';
 
 import { io } from 'socket.io-client';
+import AppContext from '../../AppContext';
 
 const socket = io('https://app.useklever.com'); //io("http://localhost:3000");
 
 let interval;
 let updater;
 const TimeTracker = () => {
+   const { isOnline } = useContext(AppContext);
    const classes = useStyles();
+   const [userDetails, setUserDetails] = useState({});
    const [projects, setProjects] = useState([]);
    const [activeProjectId, setActiveProjectId] = useState(false); //should be numeric but to make it faster, will retain false for the meantime
    const [isLoading, setIsLoading] = useState(false);
@@ -58,53 +61,30 @@ const TimeTracker = () => {
    const [weeklyLimitInSeconds, setWeeklyLimitInSeconds] = useState(0);
    const [inactivityTimeoffInSeconds, setInactivityTimeoffInSeconds] = useState(0);
    const [totalWorkedThisWeekInSeconds, setTotalWorkedThisWeekInSeconds] = useState(0);
-
+   const [ appVersion, setAppVersion ] = useState();
    const anchorRef = useRef(null);
    const navigate = useNavigate();
-   const appVersion = localStorage.getItem('version');
 
-   const postSsData = (newArr) => {
-      let failedSs = [];
-      let onComplete = [];
-      if (newArr && newArr.length) {
-         let failSsToSend = [];
-         if (JSON.parse(localStorage.getItem('failedSS'))) {
-            failSsToSend = JSON.parse(localStorage.getItem('failedSS'));
+   const netStatusRef = useRef(null);
+
+   useEffect(() => {
+      if (isOnline) {
+         clearTimeout(netStatusRef.current);
+         setErrorMessage('');
+      } else {
+         if (activeProjectId) {
+            setErrorMessage('You are offline. Please check your internet connection. The tracker will automatically pause in 5 minutes.');
+            netStatusRef.current = setTimeout(() => {
+               handlePause(activeProjectId, activeTimelogId);
+            }, 300000);
+         } else {
+            setErrorMessage('You are offline. Please check your internet connection.');
          }
-         let arrayToFetch = [...failSsToSend, ...newArr];
-         arrayToFetch.map(async (item) => {
-            let res = {};
-            if (item.second_screenshot) {
-               try {
-                  res = await axiosInstance.post('/screenshots/upload', item, returnId);
-                  setReturnId(res?.data?.return_id);
-                  onComplete.push(res);
-               } catch (err) {
-                  setErrorMessage(err);
-                  onComplete.push(err);
-                  failedSs.push(item);
-               }
-            } else {
-               try {
-                  res = await axiosInstance.post('/screenshots/upload', item);
-                  setReturnId(res?.data?.return_id);
-                  onComplete.push(res);
-               } catch (err) {
-                  setErrorMessage(err);
-                  onComplete.push(err);
-                  failedSs.push(item);
-               }
-            }
-            setIsClearScreenshots(true);
-            localStorage.setItem('screenshot', JSON.stringify([]));
-            localStorage.setItem('failedSS', JSON.stringify(failedSs));
-            setIsClearScreenshots(false);
-         });
       }
-   };
+   }, [isOnline]);
 
    const getProjectData = async () => {
-      const user = localStorage.getItem('userId');
+      const user = await window.electronApi.getFromStore("userId");
 
       // load accessibilities
       await getAccessibilities();
@@ -124,7 +104,7 @@ const TimeTracker = () => {
    };
 
    const getAccessibilities = async () => {
-      const userId = localStorage.getItem('userId');
+      const userId =  await window.electronApi.getFromStore("userId");
       const { data } = await axiosInstance.get(`/accessibilities/desktop-app?user_id=${userId}`);
       setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
       setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 0);
@@ -132,12 +112,22 @@ const TimeTracker = () => {
          `Weekly time tracking limit: ${data?.weeklyLimitInSeconds > 0 ? getHourMin(data?.weeklyLimitInSeconds) : 'None'
          }`,
       );
+      setUserDetails(data?.user);
    };
 
    const getTotalWorkedThisWeek = async () => {
-      const userId = localStorage.getItem('userId');
-      const startOfWeek = moment().startOf('week').utc().format('YYYY-MM-DD HH:mm:ss');
-      const endOfWeek = moment().endOf('week').utc().format('YYYY-MM-DD HH:mm:ss');
+      const userId =  await window.electronApi.getFromStore("userId");
+      const startOfWeekLocal = moment().startOf('week');
+      const endOfWeekLocal = moment().endOf('week');
+      // check if startOfWeek is sunday, if yes, then add 1 day to startOfWeek to make it monday
+      if (moment(startOfWeekLocal).format('dddd') === 'Sunday') {
+         startOfWeekLocal.add(1, 'days');
+         endOfWeekLocal.add(1, 'days');
+      }
+
+      const startOfWeek = startOfWeekLocal.utc().format('YYYY-MM-DD HH:mm:ss');
+      const endOfWeek = endOfWeekLocal.utc().format('YYYY-MM-DD HH:mm:ss');
+
       const { data } = await axiosInstance.get(
          `/timelog/total-weekly-hours?user_id=${userId}&start_date=${startOfWeek}&end_date=${endOfWeek}`,
       );
@@ -146,9 +136,11 @@ const TimeTracker = () => {
    };
 
    const handleProjectStart = async (project, isMidnight, isResumeLog = false, resumeLogId = null) => {
-      localStorage.removeItem('SystemIdleTime');
+      if (!isOnline) {
+         return;
+      }
       setErrorMessage('');
-      const userId = parseInt(localStorage.getItem('userId'));
+      const userId =  await window.electronApi.getFromStore("userId");
       if (isLoading === false) {
          // Log out first if clocked in to another project
          if (project.id !== activeProjectId && activeProjectId !== false) {
@@ -161,6 +153,14 @@ const TimeTracker = () => {
          setIsLoading(true);
          const { id, name, daily_limit_by_minute } = project;
          setIsLimitReached(false);
+
+         const totalDuration = await getTotalWorkedThisWeek();
+
+         if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
+            setIsLimitReached(true);
+            return;
+         }
+
          const returned_data = await handlePostTimeLog(
             id,
             userId,
@@ -171,26 +171,23 @@ const TimeTracker = () => {
          if (returned_data.data?.success) {
             setActiveTimelogId(returned_data.data.id);
             setActiveProjectId(id);
-            localStorage.setItem(
-               'projectData',
-               JSON.stringify([
-                  { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId },
-               ]),
-            );
+            const projectData = { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId };
+            await window.electronApi.setToStore("projectData", [projectData ])
             setProjectName(name);
             clearInterval(interval);
             clearInterval(updater);
-            window.electronApi.send('paused');
-            window.electronApi.send('project-started');
+            window.electronApi.pauseProject();
+            window.electronApi.startProject({ ...userDetails, ...projectData });
             let filteredProject = projects.filter((item, i) => item.id === id);
             if (filteredProject) {
-               const totalDuration = await getTotalWorkedThisWeek();
+
 
                filteredProject[0].time = returned_data.data.project_data[0].time;
                setCurrentTimer((state) => (state += parseInt(filteredProject[0].time)));
                const startTime = moment().utc().format('YYYY-MM-DD HH:mm:ss');
                let subtotalToday = totalToday;
                let filteredProjectTimeTotal = parseInt(filteredProject[0].time);
+               let internalCounter = 0;
                interval = setInterval(() => {
                   try {
                      // handle auto out when midnight is reached
@@ -200,7 +197,7 @@ const TimeTracker = () => {
                         subtotalToday = 0;
                         filteredProjectTimeTotal = 0;
                         setIsReloadApp(true);
-                     } else if (weeklyLimitInSeconds > 0 && totalDuration >= weeklyLimitInSeconds) {
+                     } else if (weeklyLimitInSeconds > 0 && (totalDuration + internalCounter) >= weeklyLimitInSeconds) {
                         setIsLimitReached(true);
                         handlePause(filteredProject[0].id, returned_data.data.id);
                      } else {
@@ -210,13 +207,12 @@ const TimeTracker = () => {
                         setCurrentTimer(filteredProjectTimeTotal + timeDiff);
                         // setTotalToday(subtotalToday + timeDiff);
                         filteredProject[0].time = filteredProjectTimeTotal + timeDiff;
-                        setTotalWorkedThisWeekInSeconds((state) => state + timeDiff);
 
                         // get total today
-                        let projectsTime = projects.reduce((acc, project) => acc + project.time, 0);
-                        setTotalToday(parseInt(projectsTime));
+                        setTotalToday((state) => state + 1);
                      }
 
+                     internalCounter++;
                      setCurrentSession((state) => state + 1);
                   } catch (error) {
                      console.log(error);
@@ -245,7 +241,17 @@ const TimeTracker = () => {
    };
 
    const handlePause = async (projectId, timelogId, isMidnight = false, idleTime = 0) => {
-      localStorage.removeItem('SystemIdleTime');
+      if (!isOnline) {
+         clearInterval(interval);
+         setCurrentTimer(0);
+         setCurrentSession(0);
+         setProjectName('Select a project');
+         setActiveProjectId(false);
+         setErrorMessage('You are offline. Please check your internet connection.');
+         window.electronApi.pauseProject();
+         return;
+      }
+
       setErrorMessage('');
       setCurrentTimer(0);
       setCurrentSession(0);
@@ -253,7 +259,7 @@ const TimeTracker = () => {
       setProjectName('Select a project');
 
       clearInterval(interval);
-      localStorage.setItem('projectData', JSON.stringify([]));
+      await window.electronApi.setToStore("projectData", [])
       let project = projects.filter((item) => item.id === projectId);
       if (project) {
          setActiveProjectId(false);
@@ -266,12 +272,12 @@ const TimeTracker = () => {
          );
          if (response.data?.success) {
             clearInterval(interval);
-            window.electronApi.send('paused');
+            window.electronApi.pauseProject();
             socket.emit('unregister', { user_id: userId });
          } else {
             setErrorMessage(response.data.error_message);
             clearInterval(interval);
-            window.electronApi.send('paused');
+            window.electronApi.pauseProject();
          }
       }
 
@@ -310,8 +316,8 @@ const TimeTracker = () => {
 
    useEffect(() => {
       const initialLoad = async () => {
-         window.electronApi.send('paused');
-         const user = localStorage.getItem('userId');
+         window.electronApi.pauseProject();
+         const user =  await window.electronApi.getFromStore("userId");
 
          await getProjectData();
          setUserId(parseInt(user));
@@ -324,45 +330,12 @@ const TimeTracker = () => {
 
    useEffect(() => {
       if (isLoadAuto) {
-         const user = localStorage.getItem('userId');
-         handleAutoClockIn(user);
+         handleAutoClockIn();
       }
    }, [isLoadAuto]);
 
    useEffect(() => {
-      if (!isClearScreenshots && activeProjectId) {
-         let data = [];
-         if (noEvents < 6) {
-            if (activeProjectId >= 0 && JSON.parse(localStorage.getItem('screenshot'))) {
-               data = JSON.parse(localStorage.getItem('screenshot'));
-               let newArr = data.map((val) => {
-                  if (val.keyboard === 0 && val.mouse === 0) {
-                     setNoEvents((state) => state + 1);
-                  } else {
-                     setNoEvents(0);
-                  }
-                  if (val.loggedTime) {
-                     return { ...val };
-                  } else {
-                     return {
-                        ...val,
-                        generated_at: moment().utc(),
-                        project_id: activeProjectId,
-                     };
-                  }
-               });
-               postSsData(newArr);
-            }
-         } else {
-            handlePause(activeProjectId);
-         }
-      }
-   }, [localStorage.getItem('screenshot'), isClearScreenshots]);
-
-   useEffect(() => {
-      const checkIdleTime = async () => {
-         const systemIdleTime = localStorage.getItem('SystemIdleTime');
-
+      const systemIdleTimeHandler = (_, systemIdleTime) => {
          if (
             activeProjectId > 0 &&
             inactivityTimeoffInSeconds > 0 &&
@@ -372,32 +345,38 @@ const TimeTracker = () => {
                `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
-            window.electronApi.send('idle-detected', { inactivityTimeoffInSeconds });
+            window.electronApi.projectIdle({ inactivityTimeoffInSeconds });
          }
-      };
-      checkIdleTime();
-   }, [localStorage.getItem('SystemIdleTime'), inactivityTimeoffInSeconds, activeProjectId]);
+      }
+      const removeListener = window.electronApi.onSystemIdleTime(systemIdleTimeHandler);
+      return removeListener
+   }, [inactivityTimeoffInSeconds, activeProjectId]);
 
    useEffect(() => {
-      const checkIdleFeedback = async () => {
-         const isNotWorking = localStorage.getItem('idle-detected-notworking');
-
-         if (activeProjectId > 0 && isNotWorking == 'true') {
+      const checkIdleFeedback = async (_, isNotWorking) => {
+         if (activeProjectId > 0 && isNotWorking == true) {
             await handlePause(activeProjectId, activeTimelogId, false, inactivityTimeoffInSeconds);
             setErrorMessage(
                `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
-            localStorage.removeItem('idle-detected-notworking');
             await getProjectData();
-         } else if (activeProjectId > 0 && isNotWorking == 'false') {
+         } else if (activeProjectId > 0 && isNotWorking == false) {
             setErrorMessage('');
-            localStorage.removeItem('idle-detected-notworking');
          }
       };
-      checkIdleFeedback();
-   }, [localStorage.getItem('idle-detected-notworking'), inactivityTimeoffInSeconds, activeProjectId]);
+      const removeListener = window.electronApi.onNotWorking(checkIdleFeedback);
+      return removeListener
+   }, [inactivityTimeoffInSeconds, activeProjectId]);
 
+
+   useEffect(() => {
+      const getAppVersion = async () => {
+         let version = await window.electronApi.appVersion(); 
+         setAppVersion(version)
+      }
+      getAppVersion();
+   },[])
 
    const handleLimitReached = () => {
       setIsLimitReached(true);
@@ -427,8 +406,8 @@ const TimeTracker = () => {
          await handlePause(activeProjectId);
       }
       if (response.data?.success) {
-         localStorage.removeItem('isRemember');
-         localStorage.removeItem('userId');
+         await window.electronApi.deleteFromStore("isRemember")
+         await window.electronApi.deleteFromStore("userId")
          navigate('/');
       } else {
          setErrorMessage(response.data.error_message);
@@ -444,8 +423,8 @@ const TimeTracker = () => {
       }
    };
 
-   const handleAutoClockIn = async (user) => {
-      const record = await getLatestLogin(user);
+   const handleAutoClockIn = async () => {
+      const record = await getLatestLogin(userId);
       try {
          if (record.err_msg.length === 0 && record.data.length > 0) {
             // handleAutoClockin Here
@@ -569,11 +548,7 @@ const TimeTracker = () => {
                                              {activeProjectId !== project.id ? (
                                                 <Box
                                                    onClick={async () => {
-                                                      weeklyLimitInSeconds > 0 &&
-                                                         totalWorkedThisWeekInSeconds >=
-                                                         weeklyLimitInSeconds
-                                                         ? handleLimitReached()
-                                                         : await handleProjectStart(project);
+                                                      await handleProjectStart(project);
                                                    }}>
                                                    {<StartIcon />}
                                                 </Box>

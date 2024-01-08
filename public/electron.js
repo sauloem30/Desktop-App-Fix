@@ -11,31 +11,25 @@ const { dialog } = require('electron');
 const DownloadManager = require('electron-download-manager');
 const { autoUpdater } = require('electron-updater');
 const logger = require('./logger');
+const activityTracker = require('./activity-tracker');
+const screenshotTracker = require('./screenshot-tracker');
+const { IPCEvents } = require('./ipc-api');
+const { SecretsStore } = require("./secrets-store")
 
-let ActivityTrackerInterval = '';
-let ActivityFlushInterval = '';
-let CaptureSSinterval = '';
-let CaptureTimeout = '';
-let CaptureMouseActivity = '';
-let keyboard = 0;
-let mouse = 0;
+let idleInterval;
+let appActivityTrackerInterval;
 let projectStart = false;
-let lastActivity = undefined;
-let activityBuffer = [];
+let lastAppActivity = undefined;
 
 const {
    app,
    BrowserWindow,
    ipcMain,
-   desktopCapturer,
    globalShortcut,
-   powerMonitor,
+   powerMonitor
 } = require('electron');
 
 const isDev = require('electron-is-dev');
-const { uIOhook } = require('uiohook-napi');
-let hasMouseActivity = false;
-let hasKeyboardActivity = false;
 
 let host = 'https://app.useklever.com';
 
@@ -106,7 +100,6 @@ function createWindow() {
    });
    win.webContents.setBackgroundThrottling(false);
 
-   win.webContents.executeJavaScript(`localStorage.setItem("version", "${app.getVersion()}");`);
 
    win.webContents.executeJavaScript(`document.title="Klever ${app.getVersion()}";`);
 
@@ -119,6 +112,16 @@ function createWindow() {
    win.once('ready-to-show', () => {
       splash.destroy();
       win.show();
+   });
+
+   win.on('close', function (event) {
+      if (projectStart) {
+         // Prevent the window from actually closing
+         event.preventDefault();
+
+         // Minimize the window instead
+         win.minimize();
+      }
    });
 
    // Open the DevTools.
@@ -227,6 +230,10 @@ const ProcessOut = async () => {
 
 app.on('window-all-closed', async () => {
    if (process.platform !== 'darwin') {
+      if (projectStart) {
+         await handlePause();
+      }
+
       await ProcessOut();
       logger.log('Closing application');
       app.quit();
@@ -241,264 +248,121 @@ app.on('activate', () => {
    }
 });
 
-function getRandomInt(min, max) {
-   return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
 // getting events from src
 
 const handlePause = async () => {
    logger.log('Application Paused');
 
-   clearInterval(ActivityTrackerInterval);
-   clearInterval(ActivityFlushInterval);
-   clearInterval(CaptureSSinterval);
-   clearTimeout(CaptureTimeout);
-   clearInterval(CaptureMouseActivity);
+   activityTracker.stop();
+   screenshotTracker.stop();
+
+   clearInterval(idleInterval);
+   clearInterval(appActivityTrackerInterval);
    idlepopup = null;
    projectStart = false;
-   lastActivity = undefined;
-   keyboard = 0;
-   mouse = 0;
-   uIOhook.stop();
+   lastAppActivity = undefined;
 };
 
-ipcMain.on('paused', async (event, data) => {
+ipcMain.on(IPCEvents.Paused, async (event, data) => {
    handlePause();
 });
 
-ipcMain.on('quiteApp', async (event, data) => {
-   win.close();
-   if (process.platform !== 'darwin') {
-      app.quit();
-   }
-});
-
-ipcMain.on('idle-detected', async (event, data) => {
+ipcMain.on(IPCEvents.Idle, async (event, data) => {
    if (!idlepopup) showIdlePopup();
 });
 
-ipcMain.on('idle-detected-notworking', async (event, data) => {
-   win.webContents.executeJavaScript(
-      `localStorage.setItem("idle-detected-notworking", "${data ? 'true' : 'false'}");`,
-   );
-   idlepopup.destroy();
+ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
+   if (win) {
+      win.webContents.send(IPCEvents.NotWorking, data);
+      idlepopup.destroy();
+   }
 });
 
-ipcMain.on('project-started', async (event, data) => {
-   projectStart = true;
-   uIOhook.start();
+ipcMain.handle(IPCEvents.GetFromStore, (_event, key) => {
+   const data = SecretsStore.get(key);
+   return data;
+ });
+
+ ipcMain.handle(IPCEvents.SetToStore, (_event, key, value) => {
+   SecretsStore.set(key, value);
+   return value;
+ });
+
+ ipcMain.handle(IPCEvents.DeleteFromStore, (_event, key) => {
+   SecretsStore.delete(key);
+   return true;
+ });
+/*
+   sample data received from src
+   data = {
+      id: 1,
+      screenshot_tracking: true,
+      app_website_tracking: true,
+      productivity_tracking: true,
+   }
+*/
+ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
    logger.log('User Clocked IN');
 
-   CaptureTimeout = setTimeout(() => {
-      try {
-         captureFunction();
-      } catch (err) {
-         console.log(err);
-      }
-   }, getRandomInt(30000, 19000));
-   CaptureMouseActivity = setInterval(() => {
-      try {
-         // if (powerMonitor.getSystemIdleTime() === 1200) {
-         //   win.webContents.send("SystemIdleTime", powerMonitor.getSystemIdleTime());
-         // }
+   projectStart = true;
 
-         win.webContents.send('SystemIdleTime', powerMonitor.getSystemIdleTime());
+   // new activity tracker
+   activityTracker.start(data.userId, data.projectId, host);
 
-         if (hasMouseActivity && hasKeyboardActivity) {
-            mouse++;
-            hasMouseActivity = false;
-            hasKeyboardActivity = false;
-         } else if (hasMouseActivity) {
-            mouse++;
-            hasMouseActivity = false;
-         } else if (hasKeyboardActivity) {
-            keyboard++;
-            hasKeyboardActivity = false;
-         }
-      } catch (error) {
-         logger.log(error);
+   // new screenshot tracker
+   screenshotTracker.start(data.userId, data.projectId, host);
+
+   // app activity tracking
+   appActivityTrackerInterval = setInterval(executeAppActivityCapture, 5000);
+
+   // idle checking interval
+   idleInterval = setInterval(() => {
+      if (win) {
+         win.webContents.send(IPCEvents.SystemIdleTime, powerMonitor.getSystemIdleTime());
       }
    }, 1000);
 
-   CaptureSSinterval = setInterval(() => {
-      CaptureTimeout = setTimeout(() => {
-         try {
-            captureFunction();
-         } catch (err) {
-            console.log(err);
-         }
-      }, getRandomInt(10000, 199980));
-   }, 199998);
+   const storeProjectData = await SecretsStore.get("projectData");
+   projectData = storeProjectData.at(0);
+   logger.log('  Project Details: ' + JSON.stringify(projectData));
+   logger.log('  ------------------------------ ');
+});
 
-   ActivityTrackerInterval = setInterval(() => {
-      try {
-         if (!projectData?.projectId) return;
+ipcMain.handle(IPCEvents.AppVersion, () => {
+   return app.getVersion();
+});
 
-         const currentApp = activeWindow();
-         const currentActivity = {
-            user_id: projectData?.userId,
-            project_id: projectData?.projectId,
-            application_name: currentApp?.info?.name ?? 'Unknown App'
-         };
+// SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
+ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
+   if (status) return;
+   const dialogOpts = {
+      type: 'info',
+      buttons: ['Ok'],
+      title: 'No Internet Connection',
+      message: 'Please check your internet connection.',
+   };
+   dialog.showMessageBox(dialogOpts, (response) => { });
+});
 
-         if (lastActivity?.application_name !== currentActivity?.application_name) {
-            axios.post(`${host}/api/application-usage/upload2`, { currentActivity });
-            lastActivity = currentActivity;
-         }
-      } catch (err) {
-         logger.log(err);
+var executeAppActivityCapture = () => {
+   try {
+      if (!projectData?.projectId) return;
+
+      const currentApp = activeWindow();
+      const currentAppActivity = {
+         user_id: projectData?.userId,
+         project_id: projectData?.projectId,
+         application_name: currentApp?.info?.name ?? 'Unknown App'
+      };
+
+      if (lastAppActivity?.application_name !== currentAppActivity?.application_name) {
+         axios.post(`${host}/api/application-usage/upload2`, { currentAppActivity });
+         lastAppActivity = currentAppActivity;
       }
-   }, 5000); // 5 seconds
-
-   win.webContents.executeJavaScript('localStorage.getItem("projectData");', true).then((result) => {
-      projectData = JSON.parse(result)[0];
-      logger.log('  Project Details: ' + JSON.stringify(JSON.parse(result)[0]));
-      logger.log('  ------------------------------ ');
-   });
-});
-
-ipcMain.on('app_version', (event) => {
-   event.sender.send('app_version', { version: app.getVersion() });
-});
-
-// getting mouse keyboard events
-uIOhook.on('keydown', (e) => {
-   if (!hasKeyboardActivity) {
-      hasKeyboardActivity = true;
+   } catch (err) {
+      logger.log(err);
    }
-});
+}
 
-uIOhook.on('mousedown', (e) => {
-   if (!hasMouseActivity) {
-      hasMouseActivity = true;
-   }
-});
-
-uIOhook.on('mousemove', (e) => {
-   if (!hasMouseActivity) {
-      hasMouseActivity = true;
-   }
-});
-
-uIOhook.on('wheel', (e) => {
-   if (!hasMouseActivity) {
-      hasMouseActivity = true;
-   }
-});
-
-var captureFunction = () => {
-   let captureImg;
-   let captureImg2;
-   let mainScreen = screenElectron.getPrimaryDisplay();
-   logger.log('  Capture function initiated');
-
-   desktopCapturer
-      .getSources({
-         types: ['screen'],
-         thumbnailSize: { width: 1280, height: 768 },
-      })
-      .then((sources) => {
-         sources.forEach(async (source, index) => {
-            if (source.name == 'Screen 1' || source.name == 'Entire Screen') {
-               captureImg = source.thumbnail.toPNG();
-            } else if (source.name == 'Screen 2') {
-               captureImg2 = source.thumbnail.toPNG();
-            } else {
-               return;
-            }
-
-            setTimeout(() => {
-               try {
-                  // create directory when missing
-                  const dir = path.resolve('c:/images/screenshots');
-                  if (!fs.existsSync(dir)) {
-                     fs.mkdirSync(dir, { recursive: true });
-                  }
-                  fs.writeFile(
-                     path.resolve(
-                        `c:/images/screenshots/${source.name == 'Entire Screen'
-                           ? 'screenshot-1.png'
-                           : source.name == 'Screen 1'
-                              ? 'screenshot-1.png'
-                              : 'screenshot-2.png'
-                        }`,
-                     ),
-                     source.name == 'Entire Screen'
-                        ? captureImg
-                        : source.name == 'Screen 1'
-                           ? captureImg
-                           : captureImg2,
-                     () => {
-                        // const windowCap = new BrowserWindow({
-                        //   maximizable: false,
-                        //   width: 300,
-                        //   height: 200,
-                        //   modal: true,
-                        //   x: mainScreen.bounds.width - 320,
-                        //   y: mainScreen.bounds.height - 270,
-                        //   autoHideMenuBar: true,
-                        //   frame: false,
-                        // });
-
-                        if (source.name == 'Entire Screen') {
-                           // windowCap.loadURL(
-                           //   `file://${path.join(__dirname, `/screenshot.html`)}`
-                           // );
-                           const image = source.thumbnail.toDataURL();
-                           win.webContents.send('asynchronous-message', {
-                              image,
-                              keyboard_activities_seconds: keyboard,
-                              mouse_activities_seconds: mouse,
-                              user_id: projectData.userId,
-                           });
-                           keyboard = 0;
-                           mouse = 0;
-                        } else if (source.name == 'Screen 1' || source.name == 'Screen 2') {
-                           // windowCap.loadURL(
-                           //   `file://${path.join(__dirname, `/multiscreenshots.html`)}`
-                           // );
-                           const image = source.thumbnail.toDataURL();
-                           source.name == 'Screen 1'
-                              ? win.webContents.send('asynchronous-message', {
-                                 image,
-                                 keyboard_activities_seconds: keyboard,
-                                 mouse_activities_seconds: mouse,
-                                 user_id: projectData.userId,
-                              })
-                              : win.webContents.send('asynchronous-message', {
-                                 image,
-                                 keyboard_activities_seconds: keyboard,
-                                 mouse_activities_seconds: mouse,
-                                 second_screenshot: true,
-                                 user_id: projectData.userId,
-                              });
-                           keyboard = 0;
-                           mouse = 0;
-                        }
-                        setTimeout(() => {
-                           try {
-                              // windowCap.close();
-                              fsExtra.removeSync(
-                                 `c:/images/screenshots/${source.name == 'Entire Screen'
-                                    ? 'screenshot-1.png'
-                                    : source.name == 'Screen 1'
-                                       ? 'screenshot-1.png'
-                                       : 'screenshot-2.png'
-                                 }`,
-                              );
-                           } catch (err) {
-                              console.log(err);
-                           }
-                        }, 5000);
-                     },
-                  );
-               } catch (err) {
-                  console.log(err);
-               }
-            }, 20);
-         });
-      });
-};
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
