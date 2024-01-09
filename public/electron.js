@@ -109,9 +109,16 @@ function createWindow() {
    // win.loadFile("index.html");
    win.loadURL(isDev ? 'http://localhost:3000' : `file://${path.join(__dirname, 'index.html')}`);
 
-   win.once('ready-to-show', () => {
+   win.once('ready-to-show', async () => {
       splash.destroy();
       win.show();
+
+      // check if screen recording permission is granted
+      const hasPermission = await screenshotTracker.checkScreenshotPermission();
+      // if not granted, quit the app
+      if (!hasPermission) {
+         app.quit();
+      }
    });
 
    win.on('close', function (event) {
