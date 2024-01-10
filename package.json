@@ -83,9 +83,9 @@
     "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",
     "test": "react-scripts test",
-    "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=build/electron.js",
-    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js",
+    "electron:package:mac": "yarn build && electron-builder --mac -c.extraMetadata.main=build/electron.js",
+    "electron:package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
+    "electron:package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
     "eject": "react-scripts eject",
     "refresh": "shx rm -rf electron-build"
   },
