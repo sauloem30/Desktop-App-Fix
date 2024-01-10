@@ -1,8 +1,4 @@
-// "afterSign": "./afterSignHook.js",
-
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
 var electron_notarize = require('electron-notarize');
 
 module.exports = async function (params) {
@@ -12,7 +8,6 @@ module.exports = async function (params) {
 
     console.log('afterSign hook triggered', params);
 
-
     try {
         await electron_notarize.notarize({
             appBundleId: "com.klever_timeTracker",
@@ -20,10 +15,9 @@ module.exports = async function (params) {
             appleId: "natsventures@gmail.com",
             appleIdPassword: "wyjv-ucmp-kuur-nvsj",
             tool: 'notarytool',
-teamId: "7D6FSY3TMG",
+            teamId: "7D6FSY3TMG",
         });
     } catch (error) {
         console.error(error);
     }
-
 };
