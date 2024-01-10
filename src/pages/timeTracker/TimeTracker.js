@@ -17,7 +17,7 @@ import {
 } from '../../api';
 // import { writeLog } from "../../helpers";
 import { PauseIcon, StartIcon, MenuIcon } from '../../assests/icons/SvgIcons';
-import logo from '../../assests/images/app-new-logo.png';
+import logo from '../../assests/images/Layer 1-2.png';
 import axiosInstance from '../../utils/axios-instance';
 import { getHourMin, getHourMinSec } from '../../utils/index';
 import { useStyles } from './useStyles';
@@ -478,6 +478,8 @@ const TimeTracker = () => {
                         maxHeight: 30,
                         marginBottom: '20px',
                         marginTop: '20px',
+                        imageRendering: 'auto', 
+                        objectFit: 'cover'
                      }}
                      alt='logo'
                   />

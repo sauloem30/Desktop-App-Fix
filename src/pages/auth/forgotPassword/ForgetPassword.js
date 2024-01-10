@@ -6,7 +6,7 @@ import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import CustomFieldInput from '../../../components/CustomField';
 import { makeStyles } from '@mui/styles';
-import logo from '../../../assests/images/app-new-logo.png';
+import logo from '../../../assests/images/Layer 1-2.png';
 import Box from '@mui/material/Box';
 import axiosInstance from '../../../utils/axios-instance';
 import { useNavigate } from 'react-router-dom';
@@ -128,8 +128,14 @@ const ForgotPassword = () => {
             }}>
             <Grid item lg={5} md={4} sm={12} xs={12}>
                <Paper className={classes.loginContainer} style={{ boxShadow: 'none' }}>
-                  <img src={logo} style={{ maxHeight: 30 }} alt='logo' />
-                  <Typography sx={{ marginTop: '30px', marginBottom: '38px' }} variant='h3'>
+                  <img src={logo} style={{ maxHeight: 50, imageRendering: 'auto', objectFit: 'cover' }} alt='logo' />
+                  <Typography
+                     variant='h2'
+                     sx={{
+                        marginTop: '40px',
+                        fontSize: '25px',
+                        marginBottom: '-20px',
+                     }}>
                      Reset Password
                   </Typography>
                   <div className={classes.loginContent}>

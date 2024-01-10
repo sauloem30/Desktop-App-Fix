@@ -9,7 +9,7 @@ import CustomFieldInput from '../../../components/CustomField';
 import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { makeStyles } from '@mui/styles';
-import logo from '../../../assests/images/app-new-logo.png';
+import logo from '../../../assests/images/Layer 1-2.png';
 import CustomButton from '../../../components/common/Button';
 import Box from '@mui/material/Box';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
@@ -182,7 +182,7 @@ const Signin = (props) => {
                         Password Reset instructions sent to your email account.
                      </Alert>
                   </Snackbar>
-                  <img src={logo} style={{ maxHeight: 30, marginTop: '20px' }} alt='logo' />
+                  <img src={logo} style={{ maxHeight: 50, marginTop: '20px', imageRendering: 'auto', objectFit: 'cover' }} alt='logo' />
                   <Typography
                      variant='h2'
                      sx={{
