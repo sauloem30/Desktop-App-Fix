@@ -75,7 +75,6 @@
     "electron": "wait-on tcp:3000 && electron .",
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
     "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",
     "test": "react-scripts test",
@@ -83,6 +82,7 @@
     "electron:package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
     "electron:package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
     "electron:package:multi": "yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js",
+    "publish": "export GH_TOKEN=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 && yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js --publish always",
     "eject": "react-scripts eject",
     "refresh": "shx rm -rf electron-build"
   },
