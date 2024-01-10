@@ -86,7 +86,8 @@
     "electron:package:mac": "yarn build && electron-builder -m -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
     "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "refresh": "shx rm -rf electron-build"
   },
   "eslintConfig": {
     "extends": [
@@ -110,6 +111,7 @@
     "concurrently": "5.2.0",
     "electron": "28.1.0",
     "electron-builder": "24.9.1",
+    "shx": "^0.3.4",
     "wait-on": "5.1.0"
   }
 }
