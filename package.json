@@ -111,7 +111,6 @@
     "concurrently": "5.2.0",
     "electron": "28.1.0",
     "electron-builder": "24.9.1",
-    "electron-builder-notarize": "^1.5.1",
     "shx": "^0.3.4",
     "wait-on": "5.1.0"
   }
