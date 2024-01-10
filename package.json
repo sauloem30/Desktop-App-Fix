@@ -74,7 +74,7 @@
     "dev": "concurrently -k \"npm start\" \"npm:electron\"",
     "electron": "wait-on tcp:3000 && electron .",
     "start": "react-scripts start",
-    "build": "react-scripts build && electron-builder --win",
+    "build": "react-scripts build",
     "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
     "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",
