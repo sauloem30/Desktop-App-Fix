@@ -86,3 +86,26 @@ exports.stop = () => {
     }
 }
 
+
+exports.checkScreenshotPermission = async () => {
+    try {
+        const sources = await desktopCapturer.getSources({ types: ['screen'] });
+
+        if (sources.length === 0) {
+            const response = await dialog.showMessageBox({
+                type: 'warning',
+                message: 'Screen recording permission not granted',
+                detail: `Please enable screen recording permission in ${process.platform === 'darwin' ? 'System Preferences > Security & Privacy > Privacy > Screen Recording' :
+                    process.platform === 'win32' ? 'Windows Settings > Privacy > Screen Recording' :
+                        'your system settings'
+                    } for Klever app.`,
+                buttons: ['OK'],
+            });
+            return false;
+        } else {
+            return true;
+        }
+    } catch (err) {
+        return false;
+    }
+}

@@ -1,7 +1,7 @@
 {
   "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
@@ -86,10 +86,11 @@
     "deploy": "electron-builder build --win --publish always",
     "release": "yarn react-build && electron-builder --publish=always",
     "test": "react-scripts test",
-    "electron:package:mac": "yarn build && export CSC_LINK='/Users/nat/Downloads/Desktop-App/Certificates2.p12' CSC_KEY_PASSWORD='12345' CSC_INSTALLER_LINK='/Users/nat/Downloads/Desktop-App/Certificates.p12' CSC_INSTALLER_KEY_PASSWORD='12345' APPLE_ID='natsventures@gmail.com' APPLE_ID_PASSWORD='wyjv-ucmp-kuur-nvsj' && electron-builder -m -c.extraMetadata.main=build/electron.js",
-    "electron:package:win": "yarn build && electron-builder -w -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "yarn build && electron-builder -l -c.extraMetadata.main=build/electron.js",
-    "eject": "react-scripts eject"
+    "electron:package:mac": "yarn build && export CSC_LINK='/Users/nat/Downloads/Desktop-App/Certificates2.p12' CSC_KEY_PASSWORD='12345' CSC_INSTALLER_LINK='/Users/nat/Downloads/Desktop-App/Certificates.p12' CSC_INSTALLER_KEY_PASSWORD='12345' APPLE_ID='natsventures@gmail.com' APPLE_ID_PASSWORD='wyjv-ucmp-kuur-nvsj' && electron-builder --mac -c.extraMetadata.main=build/electron.js",
+    "electron:package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
+    "electron:package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
+    "eject": "react-scripts eject",
+    "refresh": "shx rm -rf electron-build"
   },
   "eslintConfig": {
     "extends": [
@@ -115,6 +116,7 @@
     "electron": "28.1.0",
     "electron-builder": "24.9.1",
     "electron-builder-notarize": "^1.5.1",
+    "shx": "^0.3.4",
     "wait-on": "5.1.0"
   }
 }
