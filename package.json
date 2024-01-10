@@ -76,21 +76,16 @@
   "scripts": {
     "dev": "concurrently -k \"npm start\" \"npm:electron\"",
     "electron": "wait-on tcp:3000 && electron .",
-    "electron-build": "electron-builder",
-    "react-start": "react-scripts start",
-    "react-build": "react-scripts build",
-    "react-eject": "react-scripts eject",
     "start": "react-scripts start",
-    "build": "react-scripts build && electron-builder --win",
-    "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
-    "deploy": "electron-builder build --win --publish always",
-    "release": "yarn react-build && electron-builder --publish=always",
+    "build": "react-scripts build",
     "test": "react-scripts test",
+    "eject": "react-scripts eject",
     "electron:package:mac": "yarn build && export CSC_LINK='/Users/nat/Downloads/Desktop-App/Certificates2.p12' CSC_KEY_PASSWORD='12345' CSC_INSTALLER_LINK='/Users/nat/Downloads/Desktop-App/Certificates.p12' CSC_INSTALLER_KEY_PASSWORD='12345' APPLE_ID='natsventures@gmail.com' APPLE_ID_PASSWORD='wyjv-ucmp-kuur-nvsj' && electron-builder --mac -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
     "electron:package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
-    "eject": "react-scripts eject",
-    "refresh": "shx rm -rf electron-build"
+    "electron:package:multi": "yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js",
+    "package:publish": "export GH_TOKEN=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 && yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js --publish always",
+    "refresh": "shx rm -rf electron-build build"
   },
   "eslintConfig": {
     "extends": [
