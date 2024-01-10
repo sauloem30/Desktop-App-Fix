@@ -82,6 +82,7 @@
     "electron:package:mac": "yarn build && electron-builder --mac -c.extraMetadata.main=build/electron.js",
     "electron:package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
     "electron:package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
+    "electron:package:multi": "yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js",
     "eject": "react-scripts eject",
     "refresh": "shx rm -rf electron-build"
   },
