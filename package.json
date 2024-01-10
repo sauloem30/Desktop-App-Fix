@@ -73,10 +73,6 @@
   "scripts": {
     "dev": "concurrently -k \"npm start\" \"npm:electron\"",
     "electron": "wait-on tcp:3000 && electron .",
-    "electron-build": "electron-builder",
-    "react-start": "react-scripts start",
-    "react-build": "react-scripts build",
-    "react-eject": "react-scripts eject",
     "start": "react-scripts start",
     "build": "react-scripts build && electron-builder --win",
     "build:publish": "set GH_TOKEN=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 && react-scripts build && electron-builder --win --publish always",
