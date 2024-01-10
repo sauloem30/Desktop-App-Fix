@@ -80,11 +80,12 @@
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
+    "package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
     "electron:package:mac": "yarn build && export CSC_LINK='/Users/nat/Downloads/Desktop-App/Certificates2.p12' CSC_KEY_PASSWORD='12345' CSC_INSTALLER_LINK='/Users/nat/Downloads/Desktop-App/Certificates.p12' CSC_INSTALLER_KEY_PASSWORD='12345' APPLE_ID='natsventures@gmail.com' APPLE_ID_PASSWORD='wyjv-ucmp-kuur-nvsj' && electron-builder --mac -c.extraMetadata.main=build/electron.js",
-    "electron:package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
-    "electron:package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
-    "electron:package:multi": "yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js",
-    "package:publish": "export GH_TOKEN=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 && yarn build && electron-builder --mac --win -c.extraMetadata.main=build/electron.js --publish always",
+    "package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
+    "publish:win": "set GH_TOKEN=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 && yarn package:win --publish always",
+    "publish:mac": "export GH_TOKEN=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 && yarn package:mac --publish always",
+    "publish:linux": "export GH_TOKEN=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 && yarn package:linux --publish always",
     "refresh": "shx rm -rf electron-build build"
   },
   "eslintConfig": {
