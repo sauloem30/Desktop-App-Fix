@@ -88,13 +88,13 @@ const Signin = (props) => {
             setTimeout(() => setErrorMessage(''), 5000);
             setIsLoading(false);
          });
-      if (response.data.success === true) {
-         await window.electronApi.setToStore('isRemember', isRemember)
-         await window.electronApi.setToStore('userId', response.data.user_id)
+      if (response?.data?.success === true) {
+         await window.electronApi?.setToStore('isRemember', isRemember)
+         await window.electronApi?.setToStore('userId', response.data.user_id)
          setIsLoading(false);
          navigate('/timetracker');
       } else {
-         setErrorMessage(response.data.err_msg);
+         setErrorMessage(response?.data?.err_msg);
          setEmailAddress('');
          setIsLoading(false);
          setPassword('');
@@ -115,8 +115,8 @@ const Signin = (props) => {
    };
 
    const checkSession = async () => {
-      const rememberedUser = await window.electronApi.getFromStore("isRemember");
-      const userId = await window.electronApi.getFromStore("userId");
+      const rememberedUser = await window.electronApi?.getFromStore("isRemember");
+      const userId = await window.electronApi?.getFromStore("userId");
 
       setIsRemember(rememberedUser ?? false);
 

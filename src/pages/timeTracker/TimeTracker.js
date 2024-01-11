@@ -84,7 +84,7 @@ const TimeTracker = () => {
    }, [isOnline]);
 
    const getProjectData = async () => {
-      const user = await window.electronApi.getFromStore("userId");
+      const user = await window.electronApi?.getFromStore("userId");
 
       // load accessibilities
       await getAccessibilities();
@@ -104,7 +104,7 @@ const TimeTracker = () => {
    };
 
    const getAccessibilities = async () => {
-      const userId =  await window.electronApi.getFromStore("userId");
+      const userId =  await window.electronApi?.getFromStore("userId");
       const { data } = await axiosInstance.get(`/accessibilities/desktop-app?user_id=${userId}`);
       setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
       setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 0);
@@ -116,7 +116,7 @@ const TimeTracker = () => {
    };
 
    const getTotalWorkedThisWeek = async () => {
-      const userId =  await window.electronApi.getFromStore("userId");
+      const userId =  await window.electronApi?.getFromStore("userId");
       const startOfWeekLocal = moment().startOf('week');
       const endOfWeekLocal = moment().endOf('week');
       // check if startOfWeek is sunday, if yes, then add 1 day to startOfWeek to make it monday
@@ -140,7 +140,7 @@ const TimeTracker = () => {
          return;
       }
       setErrorMessage('');
-      const userId =  await window.electronApi.getFromStore("userId");
+      const userId =  await window.electronApi?.getFromStore("userId");
       if (isLoading === false) {
          // Log out first if clocked in to another project
          if (project.id !== activeProjectId && activeProjectId !== false) {
@@ -172,12 +172,12 @@ const TimeTracker = () => {
             setActiveTimelogId(returned_data.data.id);
             setActiveProjectId(id);
             const projectData = { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId };
-            await window.electronApi.setToStore("projectData", [projectData ])
+            await window.electronApi?.setToStore("projectData", [projectData ])
             setProjectName(name);
             clearInterval(interval);
             clearInterval(updater);
-            window.electronApi.pauseProject();
-            window.electronApi.startProject({ ...userDetails, ...projectData });
+            window.electronApi?.pauseProject();
+            window.electronApi?.startProject({ ...userDetails, ...projectData });
             let filteredProject = projects.filter((item, i) => item.id === id);
             if (filteredProject) {
 
@@ -248,7 +248,7 @@ const TimeTracker = () => {
          setProjectName('Select a project');
          setActiveProjectId(false);
          setErrorMessage('You are offline. Please check your internet connection.');
-         window.electronApi.pauseProject();
+         window.electronApi?.pauseProject();
          return;
       }
 
@@ -259,7 +259,7 @@ const TimeTracker = () => {
       setProjectName('Select a project');
 
       clearInterval(interval);
-      await window.electronApi.setToStore("projectData", [])
+      await window.electronApi?.setToStore("projectData", [])
       let project = projects.filter((item) => item.id === projectId);
       if (project) {
          setActiveProjectId(false);
@@ -272,12 +272,12 @@ const TimeTracker = () => {
          );
          if (response.data?.success) {
             clearInterval(interval);
-            window.electronApi.pauseProject();
+            window.electronApi?.pauseProject();
             socket.emit('unregister', { user_id: userId });
          } else {
             setErrorMessage(response.data.error_message);
             clearInterval(interval);
-            window.electronApi.pauseProject();
+            window.electronApi?.pauseProject();
          }
       }
 
@@ -316,8 +316,8 @@ const TimeTracker = () => {
 
    useEffect(() => {
       const initialLoad = async () => {
-         window.electronApi.pauseProject();
-         const user =  await window.electronApi.getFromStore("userId");
+         window.electronApi?.pauseProject();
+         const user =  await window.electronApi?.getFromStore("userId");
 
          await getProjectData();
          setUserId(parseInt(user));
@@ -345,10 +345,10 @@ const TimeTracker = () => {
                `The system detected that you have been idle for more than ${inactivityTimeoffInSeconds / 60
                } minutes. You were automatically logged out`,
             );
-            window.electronApi.projectIdle({ inactivityTimeoffInSeconds });
+            window.electronApi?.projectIdle({ inactivityTimeoffInSeconds });
          }
       }
-      const removeListener = window.electronApi.onSystemIdleTime(systemIdleTimeHandler);
+      const removeListener = window.electronApi?.onSystemIdleTime(systemIdleTimeHandler);
       return removeListener
    }, [inactivityTimeoffInSeconds, activeProjectId]);
 
@@ -365,14 +365,14 @@ const TimeTracker = () => {
             setErrorMessage('');
          }
       };
-      const removeListener = window.electronApi.onNotWorking(checkIdleFeedback);
+      const removeListener = window.electronApi?.onNotWorking(checkIdleFeedback);
       return removeListener
    }, [inactivityTimeoffInSeconds, activeProjectId]);
 
 
    useEffect(() => {
       const getAppVersion = async () => {
-         let version = await window.electronApi.appVersion(); 
+         let version = await window.electronApi?.appVersion(); 
          setAppVersion(version)
       }
       getAppVersion();
@@ -406,8 +406,8 @@ const TimeTracker = () => {
          await handlePause(activeProjectId);
       }
       if (response.data?.success) {
-         await window.electronApi.deleteFromStore("isRemember")
-         await window.electronApi.deleteFromStore("userId")
+         await window.electronApi?.deleteFromStore("isRemember")
+         await window.electronApi?.deleteFromStore("userId")
          navigate('/');
       } else {
          setErrorMessage(response.data.error_message);
