@@ -1,5 +1,5 @@
 const screenshot = require('screenshot-desktop')
-const { desktopCapturer, ipcMain } = require('electron')
+const { desktopCapturer, ipcMain, dialog } = require('electron')
 const moment = require('moment');
 const axios = require('axios');
 const { IPCEvents } = require('./ipc-api');
