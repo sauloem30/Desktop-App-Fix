@@ -5,12 +5,14 @@
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
-    "afterSign": "./afterSignHook.js",
     "mac": {
       "icon": "./public/icon.icns",
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
-      "entitlements": "./entitlements.mac.plist"
+      "entitlements": "./entitlements.mac.plist",
+      "notarize": {
+        "teamId": "7D6FSY3TMG"
+      }
     },
     "win": {
       "icon": "./public/app-logo.ico",
@@ -81,7 +83,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "package:win": "yarn build && electron-builder --win -c.extraMetadata.main=build/electron.js",
-    "package:mac": "yarn build && export CSC_LINK='./CSC.p12' CSC_KEY_PASSWORD='12345' CSC_INSTALLER_LINK='./CSCInstaller.p12' CSC_INSTALLER_KEY_PASSWORD='12345' APPLE_ID='natsventures@gmail.com' APPLE_ID_PASSWORD='wyjv-ucmp-kuur-nvsj' && electron-builder --mac -c.extraMetadata.main=build/electron.js",
+    "package:mac": "yarn build && export CSC_LINK='./CSC.p12' CSC_KEY_PASSWORD='12345' CSC_INSTALLER_LINK='./CSCInstaller.p12' CSC_INSTALLER_KEY_PASSWORD='12345' APPLE_ID='natsventures@gmail.com' APPLE_APP_SPECIFIC_PASSWORD='wyjv-ucmp-kuur-nvsj' && electron-builder --mac -c.extraMetadata.main=build/electron.js",
     "package:linux": "yarn build && electron-builder --linux -c.extraMetadata.main=build/electron.js",
     "publish:win": "set GH_TOKEN=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 && yarn package:win --publish always",
     "publish:mac": "export GH_TOKEN=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 && yarn package:mac --publish always",
