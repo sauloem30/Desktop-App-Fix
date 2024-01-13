@@ -1,6 +1,4 @@
 const path = require('path');
-const fs = require('fs');
-const fsExtra = require('fs-extra');
 const Storage = require('electron-store');
 const { activeWindow } = require('@miniben90/x-win');
 const axios = require('axios');
