@@ -2,9 +2,7 @@ const path = require('path');
 const { activeWindow } = require('@miniben90/x-win');
 const axios = require('axios');
 const moment = require('moment');
-const electron = require('electron');
-const screenElectron = electron.screen;
-const { dialog } = require('electron');
+const {screen, dialog} = require('electron');
 const DownloadManager = require('electron-download-manager');
 const { autoUpdater } = require('electron-updater');
 const logger = require('./logger');
@@ -68,7 +66,7 @@ function showIdlePopup() {
 
 function createWindow() {
    // Create the browser window.
-   let mainScreen = screenElectron.getPrimaryDisplay();
+   let mainScreen = screen.getPrimaryDisplay();
    let dimensions = mainScreen.size;
 
    win = new BrowserWindow({
