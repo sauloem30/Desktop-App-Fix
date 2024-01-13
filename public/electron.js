@@ -116,7 +116,7 @@ function createWindow() {
       // check if screen recording permission is granted
       const hasPermission = await screenshotTracker.checkScreenshotPermission();
       // if not granted, quit the app
-      if (!hasPermission) {
+      if (hasPermission !== true) {
          app.quit();
       }
    });
