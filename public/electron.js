@@ -1,5 +1,4 @@
 const path = require('path');
-const Storage = require('electron-store');
 const { activeWindow } = require('@miniben90/x-win');
 const axios = require('axios');
 const moment = require('moment');
@@ -34,14 +33,6 @@ let host = 'https://app.useklever.com';
 DownloadManager.register({
    downloadFolder: app.getPath('downloads') + '/installer',
 });
-
-const schema = {
-   defaultKeyCombination: {
-      type: 'string',
-      default: 'CommandOrControl+Y',
-   },
-};
-const store = new Storage({ schema });
 
 let win = null;
 let splash;
