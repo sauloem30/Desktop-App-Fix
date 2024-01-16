@@ -2,7 +2,7 @@ const path = require('path');
 const { activeWindow } = require('@miniben90/x-win');
 const axios = require('axios');
 const moment = require('moment');
-const {screen, dialog, systemPreferences} = require('electron');
+const {screen, dialog, systemPreferences, shell} = require('electron');
 const DownloadManager = require('electron-download-manager');
 const { autoUpdater } = require('electron-updater');
 const logger = require('./logger');
@@ -101,10 +101,20 @@ function createWindow() {
       win.show();
 
       // check if screen recording permission is granted
-      const status = systemPreferences.getMediaAccessStatus("screen");
-      // if not granted, quit the app
-      if (status !== "granted") {
-         app.quit();
+      if (process.platform === "darwin") {
+         const status = systemPreferences.getMediaAccessStatus("screen");
+         // if not granted, quit the app
+         if (status !== "granted") {
+            const permission = await screenshotTracker.checkScreenshotPermission();
+            if (permission === false) {
+               app.quit();
+            }
+         }
+      } else {
+         const permission = await screenshotTracker.checkScreenshotPermission();
+         if (permission === false) {
+            app.quit();
+         }
       }
    });
 
