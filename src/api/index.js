@@ -44,7 +44,7 @@ export const handleUpdateTimeLog = async (
       id: activeId,
       user_id: userId,
       offset: moment().utcOffset(),
-      is_transition: isMidnight,
+      is_transition: false, // isMidnight,
       idleTime,
    };
    try {
@@ -67,7 +67,7 @@ export const handlePostTimeLog = async (
       application_type: 'desktop',
       project_id: project_id,
       user_id: user_id,
-      is_transition: isMidnight,
+      is_transition: false, // isMidnight,
       offset: moment().utcOffset(),
       is_resume_log: isResumeLog,
       resume_log_id: resumeLogId,
