@@ -10678,10 +10678,10 @@ typescript@^5.3.3:
   resolved "https://registry.npmjs.org/typescript/-/typescript-5.3.3.tgz"
   integrity sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==
 
-uiohook-napi@^1.2.0:
-  version "1.5.2"
-  resolved "https://registry.npmjs.org/uiohook-napi/-/uiohook-napi-1.5.2.tgz"
-  integrity sha512-XmxEQpgWZerYwrhRk5oBbHSO9pjeEKF7cMG6e+Ak1j5MW7xQUvl/P+qaPAYDfbJ1JsT/E6ontbClBBSy5Z3C0g==
+uiohook-napi@^1.5.3:
+  version "1.5.3"
+  resolved "https://registry.yarnpkg.com/uiohook-napi/-/uiohook-napi-1.5.3.tgz#85da930ca2e99a62739d83abdbfd0f1c31e9bf89"
+  integrity sha512-xEfLG9ZA+NUis8RsyKz3BMunAqde3PtIypCTWS9Vi2JtnWtJoWJlS4YEiuJ/z9Ttjrz5JU6drDutNnwuCiakIg==
   dependencies:
     node-gyp-build "4.x.x"
 
