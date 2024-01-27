@@ -81,7 +81,7 @@ const TimeTracker = () => {
             setErrorMessage('You are offline. Please check your internet connection.');
          }
       }
-   }, [isOnline]);
+   }, [isOnline, activeProjectId, activeTimelogId]);
 
    const getProjectData = async () => {
       const user = await window.electronApi?.getFromStore("userId");
