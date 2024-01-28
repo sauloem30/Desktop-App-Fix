@@ -61,7 +61,7 @@ const TimeTracker = () => {
    const [weeklyLimitInSeconds, setWeeklyLimitInSeconds] = useState(0);
    const [inactivityTimeoffInSeconds, setInactivityTimeoffInSeconds] = useState(0);
    const [totalWorkedThisWeekInSeconds, setTotalWorkedThisWeekInSeconds] = useState(0);
-   const [ appVersion, setAppVersion ] = useState();
+   const [appVersion, setAppVersion] = useState();
    const anchorRef = useRef(null);
    const navigate = useNavigate();
 
@@ -75,7 +75,13 @@ const TimeTracker = () => {
          if (activeProjectId) {
             setErrorMessage('You are offline. Please check your internet connection. The tracker will automatically pause in 5 minutes.');
             netStatusRef.current = setTimeout(() => {
-               handlePause(activeProjectId, activeTimelogId);
+               clearInterval(interval);
+               setCurrentTimer(0);
+               setCurrentSession(0);
+               setProjectName('Select a project');
+               setActiveProjectId(false);
+               setErrorMessage('You are offline. Please check your internet connection.');
+               window.electronApi?.pauseProject();
             }, 300000);
          } else {
             setErrorMessage('You are offline. Please check your internet connection.');
@@ -104,7 +110,7 @@ const TimeTracker = () => {
    };
 
    const getAccessibilities = async () => {
-      const userId =  await window.electronApi?.getFromStore("userId");
+      const userId = await window.electronApi?.getFromStore("userId");
       const { data } = await axiosInstance.get(`/accessibilities/desktop-app?user_id=${userId}`);
       setWeeklyLimitInSeconds(data?.weeklyLimitInSeconds || 0);
       setInactivityTimeoffInSeconds(data?.inactivityTimeoffInSeconds || 0);
@@ -116,7 +122,7 @@ const TimeTracker = () => {
    };
 
    const getTotalWorkedThisWeek = async () => {
-      const userId =  await window.electronApi?.getFromStore("userId");
+      const userId = await window.electronApi?.getFromStore("userId");
       const startOfWeekLocal = moment().startOf('week');
       const endOfWeekLocal = moment().endOf('week');
       // check if startOfWeek is sunday, if yes, then add 1 day to startOfWeek to make it monday
@@ -140,7 +146,7 @@ const TimeTracker = () => {
          return;
       }
       setErrorMessage('');
-      const userId =  await window.electronApi?.getFromStore("userId");
+      const userId = await window.electronApi?.getFromStore("userId");
       if (isLoading === false) {
          // Log out first if clocked in to another project
          if (project.id !== activeProjectId && activeProjectId !== false) {
@@ -172,7 +178,7 @@ const TimeTracker = () => {
             setActiveTimelogId(returned_data.data.id);
             setActiveProjectId(id);
             const projectData = { id: returned_data.data.id, projectId: id, userId: returned_data.data.userId };
-            await window.electronApi?.setToStore("projectData", [projectData ])
+            await window.electronApi?.setToStore("projectData", [projectData])
             setProjectName(name);
             clearInterval(interval);
             clearInterval(updater);
@@ -317,7 +323,7 @@ const TimeTracker = () => {
    useEffect(() => {
       const initialLoad = async () => {
          window.electronApi?.pauseProject();
-         const user =  await window.electronApi?.getFromStore("userId");
+         const user = await window.electronApi?.getFromStore("userId");
 
          await getProjectData();
          setUserId(parseInt(user));
@@ -372,11 +378,11 @@ const TimeTracker = () => {
 
    useEffect(() => {
       const getAppVersion = async () => {
-         let version = await window.electronApi?.appVersion(); 
+         let version = await window.electronApi?.appVersion();
          setAppVersion(version)
       }
       getAppVersion();
-   },[])
+   }, [])
 
    const handleLimitReached = () => {
       setIsLimitReached(true);
@@ -478,7 +484,7 @@ const TimeTracker = () => {
                         maxHeight: 30,
                         marginBottom: '20px',
                         marginTop: '20px',
-                        imageRendering: 'auto', 
+                        imageRendering: 'auto',
                         objectFit: 'cover'
                      }}
                      alt='logo'
