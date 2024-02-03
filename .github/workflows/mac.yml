@@ -1,0 +1,48 @@
+name: Electron Build and Publish (macOS)
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+
+      - name: Install dependencies
+        run: |
+          yarn --frozen-lockfile
+
+      - name: Build Electron app
+        run: |
+          yarn release --mac
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        with:
+          tag_name: v${{ github.run_number }}
+          release_name: Release ${{ github.run_number }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset (macOS)
+        id: upload-release-asset-macos
+        uses: actions/upload-release-asset@v1
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./dist/*.dmg  # Matches all dmg files in the dist directory
+          asset_name: Klever-macos-${{ github.run_number }}.dmg  # Adjust as needed
+          asset_content_type: application/x-apple-diskimage
