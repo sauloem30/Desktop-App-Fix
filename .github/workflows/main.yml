@@ -52,18 +52,26 @@ jobs:
 
       - name: Upload Release Asset (macOS)
         id: upload-release-asset-macos
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/*.zip  # Matches all zip files in the dist directory
-          asset_name: Klever-macos-${{ github.run_number }}.zip  # Adjust as needed
-          asset_content_type: application/zip
+        run: |
+          zip_files=($(find ./dist -name "*.zip"))
+          for file in "${zip_files[@]}"; do
+            echo "Uploading $file"
+            curl -sSL \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "$UPLOAD_URL?name=$(basename "$file")"
+          done
 
       - name: Upload Release Asset (Windows)
         id: upload-release-asset-windows
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dist/*.exe  # Matches all exe files in the dist directory
-          asset_name: Klever-win-${{ github.run_number }}.exe  # Adjust as needed
-          asset_content_type: application/octet-stream
+        run: |
+          exe_files=($(find ./dist -name "*.exe"))
+          for file in "${exe_files[@]}"; do
+            echo "Uploading $file"
+            curl -sSL \
+              -H "Authorization: Bearer $GITHUB_TOKEN" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "$UPLOAD_URL?name=$(basename "$file")"
+          done
