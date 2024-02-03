@@ -89,6 +89,7 @@
     "publish:win": "set GH_TOKEN=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 && yarn package:win --publish always",
     "publish:mac": "export GH_TOKEN=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 && yarn package:mac --publish always",
     "publish:linux": "export GH_TOKEN=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 && yarn package:linux --publish always",
+    "release": "electron-builder",
     "refresh": "shx rm -rf electron-build build"
   },
   "eslintConfig": {
