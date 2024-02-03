@@ -3,7 +3,7 @@ name: Electron Build and Publish
 on:
   push:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -13,9 +13,9 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-            node_js: "14"
+            node_js: "16"
           - os: macos-latest
-            node_js: "14"
+            node_js: "16"
 
     env:
       GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
         with:
           tag_name: v${{ github.run_number }}
           release_name: Release ${{ github.run_number }}
-          draft: false
+          draft: true
           prerelease: false
 
       - name: Upload Release Asset
