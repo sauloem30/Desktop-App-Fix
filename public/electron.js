@@ -338,7 +338,7 @@ ipcMain.handle(IPCEvents.AppVersion, () => {
 
 // SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
 ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
-   if (status) return;
+   if (status || !projectStart) return;
    const dialogOpts = {
       type: 'info',
       buttons: ['Ok'],
