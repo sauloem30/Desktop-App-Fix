@@ -27,7 +27,7 @@ jobs:
 
       - name: Build Electron app
         run: |
-          yarn release --mac
+          yarn package:mac
 
       - name: Create Release
         id: create_release
