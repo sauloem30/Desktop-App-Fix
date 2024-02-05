@@ -1,7 +1,7 @@
 {
   "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.8.1",
+  "version": "1.8.2",
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
@@ -41,7 +41,7 @@
   "linux": {
     "target": "deb"
   },
-  "main": "build/electron.js",
+  "main": "public/electron.js",
   "homepage": "./",
   "description": "time tracker app",
   "proxy": "https://app.useklever.com",
