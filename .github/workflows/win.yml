@@ -25,5 +25,5 @@ jobs:
         run: npm install -f
     
       - name: Build and Publish
-        run: CI=false npm run publish:win
+        run: $env:CI = 'false'; npm run publish:win
 
