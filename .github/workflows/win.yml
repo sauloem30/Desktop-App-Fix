@@ -22,9 +22,8 @@ jobs:
           node-version: "18.19.0"
 
       - name: Install dependencies
-        run: |
-          yarn --frozen-lockfile
+        run: npm install -f
+    
+      - name: Build and Publish
+        run: npm run publish:win
 
-      - name: Publish Electron app
-        run: |
-          yarn publish:win
