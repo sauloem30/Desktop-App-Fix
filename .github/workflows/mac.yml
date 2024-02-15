@@ -1,4 +1,4 @@
-name: Electron Build and Publish (macOS)
+name: Electron Build and Publish (Windows)
 
 on:
   push:
@@ -19,30 +19,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16"
+          node-version: "18.19.0"
 
       - name: Install dependencies
-        run: |
-          yarn --frozen-lockfile
+        run: npm install -f
+    
+      - name: Build and Publish
+        run: CI=false npm run publish:mac
 
-      - name: Build Electron app
-        run: |
-          yarn package:mac
-
-      - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        with:
-          tag_name: v${{ github.run_number }}
-          release_name: Release ${{ github.run_number }}
-          draft: true
-          prerelease: false
-
-      - name: Upload Release Asset (macOS)
-        id: upload-release-asset-macos
-        uses: actions/upload-release-asset@v1
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./electron-build/*.dmg  # Matches all dmg files in the dist directory
-          asset_name: Klever-macos-${{ github.run_number }}.dmg  # Adjust as needed
-          asset_content_type: application/x-apple-diskimage
