@@ -102,12 +102,25 @@ function createWindow() {
 
       // check if screen recording permission is granted
       if (process.platform === "darwin") {
+         const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
          const status = systemPreferences.getMediaAccessStatus("screen");
-         // if not granted, quit the app
-         if (status !== "granted") {
-            const permission = await screenshotTracker.checkScreenshotPermission();
-            if (permission === false) {
-               app.quit();
+         
+         if (!isTrusted || status == "denied") {
+            const dialogOpts = {
+               type: 'info',
+               buttons: ['Ok'],
+               title: 'Need Permissions',
+               message: 'Accessibility and Screen permissions are needed. Please restart the app after providing those permissions.',
+            };
+            dialog.showMessageBox(dialogOpts).then((response) => { app.quit(); });
+         } else {
+            const status = systemPreferences.getMediaAccessStatus("screen");
+            // if not granted, quit the app
+            if (status !== "granted") {
+               const permission = await screenshotTracker.checkScreenshotPermission();
+               if (permission === false) {
+                  app.quit();
+               }
             }
          }
       } else {

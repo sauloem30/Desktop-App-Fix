@@ -329,7 +329,7 @@ const TimeTracker = () => {
          setUserId(parseInt(user));
          setErrorMessage('');
          setIsLoadAuto(true);
-         log.info('Log from the main process');
+         // log.info('Log from the main process');
       };
       initialLoad();
    }, []);
