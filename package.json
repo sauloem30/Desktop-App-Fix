@@ -44,7 +44,7 @@
   "main": "public/electron.js",
   "homepage": "./",
   "description": "time tracker app",
-  "proxy": "https://app.useklever.com",
+  "proxy": "https://app.klever.work",
   "private": true,
   "dependencies": {
     "@emotion/react": "^11.9.0",

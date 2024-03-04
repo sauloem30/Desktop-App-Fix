@@ -26,7 +26,7 @@ const {
 
 const isDev = require('electron-is-dev');
 
-let host = 'https://app.useklever.com';
+let host = 'https://app.klever.work';
 
 DownloadManager.register({
    downloadFolder: app.getPath('downloads') + '/installer',

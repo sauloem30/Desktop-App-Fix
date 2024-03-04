@@ -32,7 +32,7 @@ import log from 'electron-log';
 import { io } from 'socket.io-client';
 import AppContext from '../../AppContext';
 
-const socket = io('https://app.useklever.com'); //io("http://localhost:3000");
+const socket = io('https://app.klever.work'); //io("http://localhost:3000");
 
 let interval;
 let updater;
