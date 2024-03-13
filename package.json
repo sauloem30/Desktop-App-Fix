@@ -1,12 +1,12 @@
 {
   "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "1.8.6",
+  "version": "1.8.7",
   "build": {
     "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
     "mac": {
-      "icon": "./public/icon.icns",
+      "icon": "./public/icon-new.icns",
       "category": "public.app-category.utilities",
       "hardenedRuntime": true,
       "entitlements": "./entitlements.mac.plist",

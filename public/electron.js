@@ -52,7 +52,7 @@ function showIdlePopup() {
       width: 400,
       height: 400,
       frame: false,
-      icon: __dirname + 'Icon.icns',
+      icon: __dirname + 'icon-new.icns',
       alwaysOnTop: true,
       webPreferences: {
          nodeIntegration: true,
@@ -75,7 +75,7 @@ function createWindow() {
       x: 10,
       y: 10,
       maximizable: true,
-      icon: __dirname + 'Icon.icns',
+      icon: __dirname + 'icon-new.icns',
       resizable: false,
       webPreferences: {
          nodeIntegration: true,
@@ -208,7 +208,7 @@ if (!shouldLock) {
          height: 610,
          transparent: true,
          frame: false,
-         icon: __dirname + 'Icon.icns',
+         icon: __dirname + 'icon-new.icns',
          alwaysOnTop: true,
       });
       splash.loadURL(`file://${__dirname}/splash.html`);
