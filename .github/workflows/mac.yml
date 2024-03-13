@@ -1,4 +1,4 @@
-name: Electron Build and Publish (Windows)
+name: Electron Build and Publish (Mac)
 
 on:
   push:
