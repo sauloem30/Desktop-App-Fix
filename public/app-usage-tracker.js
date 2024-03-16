@@ -1,5 +1,4 @@
-const screenshot = require('screenshot-desktop')
-const { desktopCapturer, ipcMain } = require('electron')
+const { ipcMain } = require('electron')
 const moment = require('moment');
 const axios = require('axios');
 const { activeWindow } = require('@miniben90/x-win');
@@ -41,7 +40,7 @@ function uploadData(currentApp) {
     }
 }
 
-function takeScreenshot() {
+function checkActiveWindow() {
     try {
         const currentApp = activeWindow();
   
@@ -50,7 +49,7 @@ function takeScreenshot() {
             lastAppActivity = currentApp;
          }
      } catch (err) {
-        logger.log(err);
+        console.log('Error in checkActiveWindow', err);
      }
 }
 
@@ -63,7 +62,7 @@ exports.start = (_user_id, _project_id, _host) => {
 
     // every 5 seconds, check/record app usage
     interval = setInterval(() => {
-        takeScreenshot();
+        checkActiveWindow();
     }, 5000);
 }
 

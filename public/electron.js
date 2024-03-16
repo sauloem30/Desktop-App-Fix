@@ -1,20 +1,18 @@
 const path = require('path');
-const { activeWindow } = require('@miniben90/x-win');
 const axios = require('axios');
 const moment = require('moment');
-const {screen, dialog, systemPreferences} = require('electron');
+const { screen, dialog, systemPreferences } = require('electron');
 const DownloadManager = require('electron-download-manager');
 const { autoUpdater } = require('electron-updater');
 const logger = require('./logger');
 const activityTracker = require('./activity-tracker');
 const screenshotTracker = require('./screenshot-tracker');
+const appUsageTracker = require('./app-usage-tracker');
 const { IPCEvents } = require('./ipc-api');
 const { SecretsStore } = require("./secrets-store")
 
 let idleInterval;
-let appActivityTrackerInterval;
 let projectStart = false;
-let lastAppActivity = undefined;
 
 const {
    app,
@@ -104,7 +102,7 @@ function createWindow() {
       if (process.platform === "darwin") {
          const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
          const status = systemPreferences.getMediaAccessStatus("screen");
-         
+
          if (!isTrusted || status == "denied") {
             const dialogOpts = {
                type: 'info',
@@ -112,13 +110,17 @@ function createWindow() {
                title: 'Need Permissions',
                message: 'Accessibility and Screen permissions are needed. Please restart the app after providing those permissions.',
             };
-            dialog.showMessageBox(dialogOpts).then((response) => { app.quit(); });
+            dialog.showMessageBox(dialogOpts).then((response) => {
+               console.log('Permission not granted, quitting app');
+               app.quit();
+            });
          } else {
             const status = systemPreferences.getMediaAccessStatus("screen");
             // if not granted, quit the app
             if (status !== "granted") {
                const permission = await screenshotTracker.checkScreenshotPermission();
                if (permission === false) {
+                  console.log('Permission not granted, quitting app');
                   app.quit();
                }
             }
@@ -126,12 +128,16 @@ function createWindow() {
       } else {
          const permission = await screenshotTracker.checkScreenshotPermission();
          if (permission === false) {
+            console.log('Permission not granted, quitting app');
             app.quit();
          }
       }
    });
 
    win.on('close', function (event) {
+
+      console.log('Window close event');
+
       if (projectStart) {
          // Prevent the window from actually closing
          event.preventDefault();
@@ -158,6 +164,8 @@ if (!isDev) {
 
 // SHOWS A MESSAGE WHEN A UPDTE AVAILABLE
 autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
+   console.log('Update available');
+
    const dialogOpts = {
       type: 'info',
       buttons: ['Ok'],
@@ -170,6 +178,7 @@ autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
 
 //ASKS TO USER TO RESTART THE APPLICATION WHEN THE UPDATE IS READY TO BE INSTALLED
 autoUpdater.on('update-downloaded', (_event, releaseNotes, releaseName) => {
+   console.log('Update downloaded');
    const dialogOpts = {
       type: 'info',
       buttons: ['Restart', 'Later'],
@@ -192,9 +201,12 @@ autoUpdater.on('update-downloaded', (_event, releaseNotes, releaseName) => {
 const shouldLock = app.requestSingleInstanceLock();
 
 if (!shouldLock) {
+   console.log('App already running, quitting new instance');
    app.quit();
 } else {
    app.on('second-instance', (event, commandLine, workingDirectory) => {
+      console.log('Second instance tried to run');
+
       // Someone tried to run a second instance, we should focus our window.
       if (win) {
          if (win.isMinimized()) win.restore();
@@ -250,12 +262,18 @@ const ProcessOut = async () => {
 };
 
 app.on('window-all-closed', async () => {
+   console.log('Window all closed event');
+
    if (process.platform !== 'darwin') {
       if (projectStart) {
          await handlePause();
       }
 
-      await ProcessOut();
+      try {
+         await ProcessOut();
+      } catch (err) {
+         console.log('ProcessOut', err);
+      }
       logger.log('Closing application');
       app.quit();
    }
@@ -264,6 +282,7 @@ app.on('window-all-closed', async () => {
 app.on('activate', () => {
    // On macOS it's common to re-create a window in the app when the
    // dock icon is clicked and there are no other windows open.
+   console.log('App activated');
    if (BrowserWindow.getAllWindows().length === 0) {
       createWindow();
    }
@@ -276,12 +295,11 @@ const handlePause = async () => {
 
    activityTracker.stop();
    screenshotTracker.stop();
+   appUsageTracker.stop();
 
    clearInterval(idleInterval);
-   clearInterval(appActivityTrackerInterval);
    idlepopup = null;
    projectStart = false;
-   lastAppActivity = undefined;
 };
 
 ipcMain.on(IPCEvents.Paused, async (event, data) => {
@@ -300,19 +318,34 @@ ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
 });
 
 ipcMain.handle(IPCEvents.GetFromStore, (_event, key) => {
-   const data = SecretsStore.get(key);
-   return data;
- });
+   try {
+      const data = SecretsStore.get(key);
+      return data;
+   } catch (error) {
+      console.error(`Failed to get data from SecretsStore:`, error);
+      return null;
+   }
+});
 
- ipcMain.handle(IPCEvents.SetToStore, (_event, key, value) => {
-   SecretsStore.set(key, value);
-   return value;
- });
+ipcMain.handle(IPCEvents.SetToStore, (_event, key, value) => {
+   try {
+      SecretsStore.set(key, value);
+      return value;
+   } catch (error) {
+      console.error(`Failed to set data in SecretsStore:`, error);
+      return null;
+   }
+});
 
- ipcMain.handle(IPCEvents.DeleteFromStore, (_event, key) => {
-   SecretsStore.delete(key);
-   return true;
- });
+ipcMain.handle(IPCEvents.DeleteFromStore, (_event, key) => {
+   try {
+      SecretsStore.delete(key);
+      return true;
+   } catch (error) {
+      console.error(`Failed to delete data from SecretsStore:`, error);
+      return false;
+   }
+});
 /*
    sample data received from src
    data = {
@@ -334,27 +367,38 @@ ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
    screenshotTracker.start(data.userId, data.projectId, host);
 
    // app activity tracking
-   appActivityTrackerInterval = setInterval(executeAppActivityCapture, 5000);
+   appUsageTracker.start(data.userId, data.projectId, host);
 
    // idle checking interval
    idleInterval = setInterval(() => {
       if (win) {
-         win.webContents.send(IPCEvents.SystemIdleTime, powerMonitor.getSystemIdleTime());
+         try {
+            win.webContents.send(IPCEvents.SystemIdleTime, powerMonitor.getSystemIdleTime());
+         } catch (err) {
+            console.log('Error in sending idle check event', err);
+         }
       }
    }, 1000);
 
-   const storeProjectData = await SecretsStore.get("projectData");
-   projectData = storeProjectData.at(0);
-   logger.log('  Project Details: ' + JSON.stringify(projectData));
-   logger.log('  ------------------------------ ');
+   try {
+      const storeProjectData = await SecretsStore.get("projectData");
+      projectData = storeProjectData.at(0);
+      logger.log('  Project Details: ' + JSON.stringify(projectData));
+      logger.log('  ------------------------------ ');
+   }
+   catch (err) {
+      console.log(err);
+   }
 });
 
 ipcMain.handle(IPCEvents.AppVersion, () => {
+   console.log('App version requested');
    return app.getVersion();
 });
 
 // SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
 ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
+   console.log('OnlineStatusChanged', status);
    if (status || !projectStart) return;
    const dialogOpts = {
       type: 'info',
@@ -364,26 +408,6 @@ ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
    };
    dialog.showMessageBox(dialogOpts, (response) => { });
 });
-
-var executeAppActivityCapture = () => {
-   try {
-      if (!projectData?.projectId) return;
-
-      const currentApp = activeWindow();
-      const currentAppActivity = {
-         user_id: projectData?.userId,
-         project_id: projectData?.projectId,
-         application_name: currentApp?.info?.name ?? 'Unknown App'
-      };
-
-      if (lastAppActivity?.application_name !== currentAppActivity?.application_name) {
-         axios.post(`${host}/api/application-usage/upload2`, { currentAppActivity });
-         lastAppActivity = currentAppActivity;
-      }
-   } catch (err) {
-      logger.log(err);
-   }
-}
 
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';

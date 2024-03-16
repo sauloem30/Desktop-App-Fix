@@ -43,20 +43,26 @@ function uploadScreenshot(imgs) {
 function takeScreenshot() {
     console.log('New Capture function initiated');
 
-    desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1280, height: 768 }, })
-        .then((sources) => {
-            const imgs = sources.map((source) => {
-                return source.thumbnail.toPNG();
+    try {
+        desktopCapturer.getSources({ types: ['screen'], thumbnailSize: { width: 1280, height: 768 }, })
+            .then((sources) => {
+                const imgs = sources.map((source) => {
+                    return source.thumbnail.toPNG();
+                });
+                uploadScreenshot(imgs);
+            })
+            .catch((err) => {
+                console.log('Error in desktopCapturer', err);
+                // if fails, will try the screenshot-desktop library
+                screenshot.all({ format: 'png' })
+                    .then(uploadScreenshot)
             });
-            uploadScreenshot(imgs);
-        })
-        .catch((err) => {
-            // if fails, will try the screenshot-desktop library
-            screenshot.all({ format: 'png' })
-                .then(uploadScreenshot)
-        });
 
-    start_at = moment().utc();
+        start_at = moment().utc();
+    }
+    catch (err) {
+        console.log('Error in takeScreenshot', err);
+    }
 }
 
 exports.start = (_user_id, _project_id, _host) => {
@@ -91,7 +97,7 @@ exports.checkScreenshotPermission = async () => {
     try {
         const sources = await desktopCapturer.getSources({ types: ['screen'] });
         if (sources.length === 0) {
-           await dialog.showMessageBox({
+            await dialog.showMessageBox({
                 type: 'warning',
                 message: 'Screen recording permission not granted',
                 detail: `Please enable screen recording permission in ${process.platform === 'darwin' ? 'System Preferences > Security & Privacy > Privacy > Screen Recording' :
