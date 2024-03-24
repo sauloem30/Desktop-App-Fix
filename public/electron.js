@@ -9,7 +9,8 @@ const activityTracker = require('./activity-tracker');
 const screenshotTracker = require('./screenshot-tracker');
 const appUsageTracker = require('./app-usage-tracker');
 const { IPCEvents } = require('./ipc-api');
-const { SecretsStore } = require("./secrets-store")
+const { SecretsStore } = require("./secrets-store");
+let appInsights = require('applicationinsights');
 
 let idleInterval;
 let projectStart = false;
@@ -215,6 +216,10 @@ if (!shouldLock) {
    });
 
    app.whenReady().then(async () => {
+      // enable app insights
+      let key = `InstrumentationKey=7edd67c7-b077-4882-9a8f-576781bce19b;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/`;
+      appInsights.setup(key).start();
+
       splash = new BrowserWindow({
          width: 810,
          height: 610,

@@ -6,6 +6,8 @@ import reportWebVitals from './reportWebVitals';
 import theme from './theme/index';
 import { ThemeProvider } from '@mui/material';
 import { HashRouter } from 'react-router-dom';
+import { AppInsightsContext } from '@microsoft/applicationinsights-react-js';
+import { reactPlugin } from './utils/appInsightsService';
 
 import '@fontsource/inter/100.css';
 import '@fontsource/inter/200.css';
@@ -22,7 +24,9 @@ root.render(
    <React.StrictMode>
       <ThemeProvider theme={theme}>
          <HashRouter>
-            <App />
+            <AppInsightsContext.Provider value={reactPlugin}>
+               <App />
+            </AppInsightsContext.Provider>
          </HashRouter>
       </ThemeProvider>
    </React.StrictMode>,
