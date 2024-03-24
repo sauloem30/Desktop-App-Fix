@@ -218,7 +218,13 @@ if (!shouldLock) {
    app.whenReady().then(async () => {
       // enable app insights
       let key = `InstrumentationKey=7edd67c7-b077-4882-9a8f-576781bce19b;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/`;
-      appInsights.setup(key).start();
+      try {
+         appInsights.setup(key);
+         appInsights.defaultClient.context.tags[appInsights.defaultClient.context.keys.cloudRole] = "Electron";
+         appInsights.start();
+      } catch (err) {
+         console.log('Error in setting up app insights', err);
+      }
 
       splash = new BrowserWindow({
          width: 810,
