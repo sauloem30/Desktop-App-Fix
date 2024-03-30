@@ -243,35 +243,6 @@ if (!shouldLock) {
    });
 }
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
-
-const ProcessOut = async () => {
-   const { id, projectId, userId } = projectData;
-   if (id && projectId && userId) {
-      const processData = async () => {
-         logger.log('Process Out');
-
-         const obj = {
-            time_out: moment().utc(),
-            application_type: 'desktop-auto',
-            project_id: projectId,
-            user_id: userId,
-            id: id,
-         };
-         try {
-            await axios.post(`${host}/api/timelog/time_out`, obj);
-            logger.log('  Process Out Successful');
-         } catch (err) {
-            console.log(err);
-            logger.log('  Error processing out');
-         }
-      };
-      await processData();
-   }
-};
-
 app.on('window-all-closed', async () => {
    console.log('Window all closed event');
 
@@ -280,11 +251,6 @@ app.on('window-all-closed', async () => {
          await handlePause();
       }
 
-      try {
-         await ProcessOut();
-      } catch (err) {
-         console.log('ProcessOut', err);
-      }
       logger.log('Closing application');
       app.quit();
    }

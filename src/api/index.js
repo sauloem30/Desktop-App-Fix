@@ -3,11 +3,7 @@ import axiosInstance from '../utils/axios-instance';
 
 export const getProjects = async (userId) => {
    try {
-      const response = await axiosInstance.get(
-         `${
-            process.env.REACT_APP_API_BASE_URL
-         }/projects/lookup/active?user_id=${userId}&offset=${moment().utcOffset()}`,
-      );
+      const response = await axiosInstance.get(`/time-tracker/projects?user_id=${userId}&utcOffset=${moment().utcOffset()}`);
 
       return response.data;
    } catch (err) {
@@ -18,9 +14,7 @@ export const getProjects = async (userId) => {
 
 export const getLatestLogin = async (user_id) => {
    try {
-      const response = await axiosInstance.get(
-         `${process.env.REACT_APP_API_BASE_URL}/get_lookup/latest_employee_clock_in?user_id=${user_id}`,
-      );
+      const response = await axiosInstance.get(`/get_lookup/latest_employee_clock_in?user_id=${user_id}`);
       return response.data;
    } catch (err) {
       // handle errors here
@@ -35,20 +29,14 @@ export const handleUpdateTimeLog = async (
    isMidnight = false,
    idleTime = 0,
 ) => {
-   const { id } = project;
-   // handlePause(id);
    const obj = {
-      time_out: moment().utc(),
-      application_type: 'desktop',
-      project_id: id || project,
       id: activeId,
       user_id: userId,
-      offset: moment().utcOffset(),
-      is_transition: false, // isMidnight,
-      idleTime,
+      utcOffset: moment().utcOffset(),
+      idleTime
    };
    try {
-      const response = await axiosInstance.post(`/timelog/time_out`, obj);
+      const response = await axiosInstance.post(`/time-tracker/time-out`, obj);
       return response;
    } catch (err) {
       return { data: { success: false, error_message: 'Error Clocking Out', inserted: [] } };
@@ -63,18 +51,12 @@ export const handlePostTimeLog = async (
    resumeLogId = null,
 ) => {
    const obj = {
-      time_in: moment().utc(),
-      application_type: 'desktop',
-      project_id: project_id,
-      user_id: user_id,
-      is_transition: false, // isMidnight,
-      offset: moment().utcOffset(),
-      is_resume_log: isResumeLog,
-      resume_log_id: resumeLogId,
+      user_id,
+      project_id,
+      utcOffset: moment().utcOffset(),
    };
-   let res;
    try {
-      res = await axiosInstance.post(`/timelog/time_in`, obj);
+      const res = await axiosInstance.post(`/time-tracker/time-in`, obj);
       return res;
    } catch (err) {
       return { data: { success: false, error_message: 'Error Clocking In' } };

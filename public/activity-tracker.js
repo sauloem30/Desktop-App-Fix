@@ -69,7 +69,8 @@ function uploadData() {
         number_of_clicks: numberOfClicks,
         number_of_keypress: numberOfKeyPress,
         start_at,
-        end_at: moment().utc()
+        end_at: moment().utc(),
+        duration: moment().diff(start_at, 'seconds')
     };
 
     if (!onlineStatus) {

@@ -29,7 +29,7 @@ function uploadScreenshot(imgs) {
         user_id,
         project_id,
         imgs,
-        generated_at: moment().utc()
+        generated_at: moment().utc(),
     };
 
     if (!onlineStatus) {

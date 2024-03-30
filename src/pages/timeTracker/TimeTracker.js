@@ -27,12 +27,7 @@ import Popper from '@mui/material/Popper';
 import MenuItem from '@mui/material/MenuItem';
 import MenuList from '@mui/material/MenuList';
 import { useNavigate } from 'react-router-dom';
-import log from 'electron-log';
-
-import { io } from 'socket.io-client';
 import AppContext from '../../AppContext';
-
-const socket = io('https://app.klever.work'); //io("http://localhost:3000");
 
 let interval;
 let updater;
@@ -76,6 +71,7 @@ const TimeTracker = () => {
             setErrorMessage('You are offline. Please check your internet connection. The tracker will automatically pause in 5 minutes.');
             netStatusRef.current = setTimeout(() => {
                clearInterval(interval);
+               clearInterval(updater);
                setCurrentTimer(0);
                setCurrentSession(0);
                setProjectName('Select a project');
@@ -227,14 +223,12 @@ const TimeTracker = () => {
 
                updater = setInterval(() => {
                   try {
-                     socket.emit('update', { user_id: userId, id: returned_data.data.id });
+                     if (returned_data?.data?.id > 0)
+                        axiosInstance.post(`/time-tracker/heartbeat?id=${returned_data?.data?.id}`);
                   } catch (error) {
                      console.log(error);
                   }
-               }, 180000);
-
-               // handle Socket Connection
-               socket.emit('register', { user_id: userId });
+               }, 150000);
             } else {
                return null;
             }
@@ -249,6 +243,7 @@ const TimeTracker = () => {
    const handlePause = async (projectId, timelogId, isMidnight = false, idleTime = 0) => {
       if (!isOnline) {
          clearInterval(interval);
+         clearInterval(updater);
          setCurrentTimer(0);
          setCurrentSession(0);
          setProjectName('Select a project');
@@ -265,6 +260,7 @@ const TimeTracker = () => {
       setProjectName('Select a project');
 
       clearInterval(interval);
+      clearInterval(updater);
       await window.electronApi?.setToStore("projectData", [])
       let project = projects.filter((item) => item.id === projectId);
       if (project) {
@@ -278,11 +274,12 @@ const TimeTracker = () => {
          );
          if (response.data?.success) {
             clearInterval(interval);
+            clearInterval(updater);
             window.electronApi?.pauseProject();
-            socket.emit('unregister', { user_id: userId });
          } else {
             setErrorMessage(response.data.error_message);
             clearInterval(interval);
+            clearInterval(updater);
             window.electronApi?.pauseProject();
          }
       }
