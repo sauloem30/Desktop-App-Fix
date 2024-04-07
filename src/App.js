@@ -2,9 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Routes, Route } from "react-router-dom";
 import Signin from "./pages/auth/signin/Signin";
 import ForgetPassword from "./pages/auth/forgotPassword/ForgetPassword";
-import TimeTracker from "./pages/timeTracker/TimeTracker";
 import './App.css'
 import AppContext from "./AppContext";
+import Tracker from "./pages/tracker";
+import { getAppVersion, setToStore, onlineStatusChanged } from "./utils/electronApi";
+import { logInfo } from "./utils/loggerHelper";
+
 function App() {
 
   const [isOnline, setIsOnline] = useState(true);
@@ -12,8 +15,10 @@ function App() {
   useEffect(() => {
     // detect internet connection
     const handleChange = (newStatus) => {
-      window?.electronApi?.changeOnlineStatus(newStatus);
       setIsOnline(newStatus);
+      (async () => {
+        await onlineStatusChanged(newStatus);
+      })();
     };
 
     window.addEventListener('online', () => handleChange(true));
@@ -25,12 +30,28 @@ function App() {
     }
   }, [])
 
+  // get app version and update title
+  useEffect(() => {
+    getAppVersion()
+      .then((version) => {
+        logInfo(`App version: ${version}`);
+        document.title = `Klever v${version}`;
+      });
+  }, []);
+
+  // save base url to store
+  useEffect(() => {
+    (async () => {
+      await setToStore('baseUrl', process.env.REACT_APP_API_BASE_URL);
+    })()
+  }, []);
+
   return (
     <AppContext.Provider value={{ isOnline }}>
       <Routes>
         <Route exact path="/" element={<Signin />} />
         <Route exact path="/forgotpassword" element={<ForgetPassword />} />
-        <Route exact path="/timetracker" element={<TimeTracker />} />
+        <Route exact path="/timetracker" element={<Tracker />} />
       </Routes>
     </AppContext.Provider>
   );

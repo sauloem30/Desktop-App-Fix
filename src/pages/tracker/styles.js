@@ -37,3 +37,12 @@ export const useStyles = makeStyles((theme) => ({
 		scrollbarWidth: 'thin'
 	}
 }));
+
+export const sx = {
+	listItemBox: {
+		display: 'flex',
+		alignItems: 'center',
+		justifyContent: 'center',
+		marginLeft: '8px',
+	}
+}

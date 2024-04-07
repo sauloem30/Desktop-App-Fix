@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import Grid from '@mui/material/Grid';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
-import AppConfig from '../../../config/app.json';
 import FormControl from '@mui/material/FormControl';
 import InputLabel from '@mui/material/InputLabel';
 import CustomFieldInput from '../../../components/CustomField';
@@ -10,7 +9,6 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import { makeStyles } from '@mui/styles';
 import logo from '../../../assests/images/Layer 1-2.png';
-import CustomButton from '../../../components/common/Button';
 import Box from '@mui/material/Box';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../utils/axios-instance';
@@ -19,6 +17,8 @@ import Alert from '@mui/material/Alert';
 import Snackbar from '@mui/material/Snackbar';
 import moment from 'moment';
 import AppContext from '../../../AppContext';
+import { getFromStore, setToStore,  } from '../../../utils/electronApi';
+import { logInfo } from '../../../utils/loggerHelper';
 
 const useStyles = makeStyles((theme) => ({
    root: {
@@ -49,12 +49,28 @@ const useStyles = makeStyles((theme) => ({
    },
 }));
 
-const Signin = (props) => {
+const sx = {
+   logoImg: { maxHeight: 50, marginTop: '20px', imageRendering: 'auto', objectFit: 'cover' },
+   signInLabel: {
+      marginTop: '40px',
+      fontSize: '25px',
+      marginBottom: '-20px',
+   },
+   errorText: {
+      display: 'flex',
+      justifyContent: 'center',
+      flex: 1,
+   },
+   rememberWrapper: { display: 'flex', alignItems: 'center', marginBottom: '40px' }
+};
+
+const Signin = () => {
    const { isOnline } = React.useContext(AppContext);
 
    const classes = useStyles();
-   const textRef = useRef(null);
-   let navigate = useNavigate();
+   const navigate = useNavigate();
+   const location = useLocation();
+
    const [emailAddress, setEmailAddress] = useState('');
    const [password, setPassword] = useState('');
    const [isRemember, setIsRemember] = useState(false);
@@ -62,7 +78,33 @@ const Signin = (props) => {
    const [isLoading, setIsLoading] = useState(false);
    const [isSuccessToast, setIsSuccessToast] = useState(false);
    const [isHover, setIsHover] = useState(false);
-   const location = useLocation();
+
+   const loginButton = useMemo(() => ({
+      backgroundColor: isHover ? '#A259FF' : '#4262FF',
+      borderRadius: 20,
+      padding: 6,
+      fontWeight: '700',
+      fontSize: 17,
+      textTransform: 'none',
+   }), [isHover]);
+
+   useEffect(() => {
+      checkSession();
+   }, []);
+
+   useEffect(() => {
+      setIsSuccessToast(location?.state?.isSuccess);
+   }, [location?.state?.isSuccess]);
+
+   // clear the error message after 5 seconds
+   useEffect(() => {
+      if (errorMessage) {
+         const timer = setTimeout(() => {
+            setErrorMessage('');
+         }, 5000);
+         return () => clearTimeout(timer);
+      }
+   }, [errorMessage]);
 
    const handleLogin = async (event) => {
       if (!isOnline) {
@@ -70,96 +112,81 @@ const Signin = (props) => {
          return;
       }
 
-      setIsLoading(true);
       setErrorMessage('');
-      const response = await axiosInstance
-         .request({
-            method: 'POST',
-            url: `${process.env.REACT_APP_API_BASE_URL}/login/authenticate`,
-            data: {
-               application_type: 'desktop',
-               email_address: emailAddress,
-               password: password,
-               timezone_offset: moment().utcOffset()
-            },
+      setIsLoading(true);
+
+      const payload = {
+         application_type: 'desktop',
+         email_address: emailAddress,
+         password: password,
+         timezone_offset: moment().utcOffset(),
+         isRemember
+      }
+
+      axiosInstance.post('/tracker-app/login', payload)
+         .then(({ data }) => {
+            (async () => {
+               await setToStore('isRemember', isRemember)
+               await setToStore('email', emailAddress)
+               await setToStore('userId', data.user_id)
+               await setToStore('token', data.token)
+
+               logInfo('User logged in successfully:', emailAddress);
+               setIsLoading(false);
+               navigate('/timetracker');
+            })();
          })
          .catch((error) => {
-            setErrorMessage('Login Error. Please try again later.');
-            setTimeout(() => setErrorMessage(''), 5000);
+            const message = error?.response?.data?.error || 'Login Error. Please try again later.';
+            logInfo('Login error:', message);
+            setErrorMessage(message);
+         })
+         .finally(() => {
             setIsLoading(false);
          });
-      if (response?.data?.success === true) {
-         await window.electronApi?.setToStore('isRemember', isRemember)
-         await window.electronApi?.setToStore('userId', response.data.user_id)
-         setIsLoading(false);
-         navigate('/timetracker');
-      } else {
-         setErrorMessage(response?.data?.err_msg);
-         setEmailAddress('');
-         setIsLoading(false);
-         setPassword('');
-         if (textRef.current) {
-            textRef.current.focus();
-         }
-      }
+   };
+
+   const checkSession = () => {
+      getFromStore("isRemember")
+         .then((rememberedUser) =>
+            setIsRemember(rememberedUser ?? false)
+         );
+
+      getFromStore("email")
+         .then((email) =>
+            setEmailAddress(email ?? '')
+         );
+
+      getFromStore("token")
+         .then((token) => {
+            if (token) {
+               logInfo('User session found. Redirecting to timetracker page');
+               setIsLoading(true);
+               axiosInstance.get('/tracker-app/check-session')
+                  .then(() => {
+                     navigate('/timetracker');
+                  })
+                  .catch((error) => {
+                     // possible error: session expired
+                     // do nothing
+                     console.log('error', error);
+                  })
+                  .finally(() => {
+                     setIsLoading(false);
+                  });
+            }
+         });
+   };
+
+   const handleToast = () => {
+      setIsSuccessToast(false);
+      window.history.replaceState({}, document.title);
    };
 
    const triggerSignIn = (e) => {
       if (e.keyCode === 13) {
          handleLogin();
       }
-   };
-
-   const handleChange = (event) => {
-      setIsRemember(event.target.checked);
-   };
-
-   const checkSession = async () => {
-      const rememberedUser = await window.electronApi?.getFromStore("isRemember");
-      const userId = await window.electronApi?.getFromStore("userId");
-
-      setIsRemember(rememberedUser ?? false);
-
-      if (rememberedUser) {
-         // const responseJSON = await axiosInstance.request({
-         //   method: "GET",
-         //   url: `${process.env.REACT_APP_API_BASE_URL}/login/check_session`,
-         // });
-         const isLoggedIn = rememberedUser && parseInt(userId) > 0;
-         if (isLoggedIn) {
-            navigate('/timetracker');
-         }
-      }
-   };
-
-   const handleMouseEnter = () => {
-      setIsHover(true);
-   };
-
-   const handleMouseLeave = () => {
-      setIsHover(false);
-   };
-
-   const loginButton = {
-      backgroundColor: isHover ? '#A259FF' : '#4262FF',
-      borderRadius: 20,
-      padding: 6,
-      fontWeight: '700',
-      fontSize: 17,
-      textTransform: 'none',
-   };
-
-   useEffect(() => {
-      setIsSuccessToast(location?.state?.isSuccess);
-   }, [location?.state?.isSuccess]);
-
-   useEffect(() => {
-      checkSession();
-   }, []);
-
-   const handleToast = () => {
-      setIsSuccessToast(false);
-      window.history.replaceState({}, document.title);
    };
 
    return (
@@ -182,15 +209,9 @@ const Signin = (props) => {
                         Password Reset instructions sent to your email account.
                      </Alert>
                   </Snackbar>
-                  <img src={logo} style={{ maxHeight: 50, marginTop: '20px', imageRendering: 'auto', objectFit: 'cover' }} alt='logo' />
-                  <Typography
-                     variant='h2'
-                     sx={{
-                        marginTop: '40px',
-                        fontSize: '25px',
-                        marginBottom: '-20px',
-                     }}>
-                     Sign in to {`${AppConfig.product_name}`}
+                  <img src={logo} style={sx.logoImg} alt='logo' />
+                  <Typography variant='h2' sx={sx.signInLabel}>
+                     Sign In
                   </Typography>
                   <div className={classes.loginContent}>
                      <form
@@ -205,9 +226,6 @@ const Signin = (props) => {
                               <Typography variant='body2'>Email</Typography>
                            </InputLabel>
                            <CustomFieldInput
-                              inputRef={(el) => {
-                                 textRef.current = el;
-                              }}
                               variant='outlined'
                               size='small'
                               label=''
@@ -217,7 +235,6 @@ const Signin = (props) => {
                               onChange={(event) => setEmailAddress(event.target.value)}
                               onKeyDown={triggerSignIn}
                               id='email'
-                              // placeholder='Enter your email'
                            />
                         </FormControl>
                         <FormControl variant='standard' sx={{ width: '100%', marginBottom: '15px' }}>
@@ -234,25 +251,19 @@ const Signin = (props) => {
                               onChange={(event) => setPassword(event.target.value)}
                               onKeyDown={triggerSignIn}
                               id='password'
-                              // placeholder='Enter your password'
                            />
                         </FormControl>
                         {errorMessage && (
-                           <div
-                              style={{
-                                 display: 'flex',
-                                 justifyContent: 'center',
-                                 flex: 1,
-                              }}>
+                           <div style={sx.errorText}>
                               <Typography style={{ color: 'red' }}>{errorMessage}</Typography>
                            </div>
                         )}
 
-                        <Box sx={{ display: 'flex', alignItems: 'center', marginBottom: '40px' }}>
+                        <Box sx={sx.rememberWrapper}>
                            <div style={{ textAlign: 'left', flex: 1 }}>
                               <Typography>
                                  <FormControlLabel
-                                    control={<Checkbox onChange={handleChange} checked={isRemember} />}
+                                    control={<Checkbox onChange={(e) => setIsRemember(e.target.checked)} checked={isRemember} />}
                                     label={
                                        <Typography style={{ fontSize: 14 }}>Remember Me</Typography>
                                     }
@@ -273,12 +284,11 @@ const Signin = (props) => {
                               type='submit'
                               color='primary'
                               variant='contained'
-                              // loadingIndicator='Please wait...'
                               onClick={handleLogin}
                               loading={isLoading}
                               style={loginButton}
-                              onMouseEnter={handleMouseEnter}
-                              onMouseLeave={handleMouseLeave}
+                              onMouseEnter={() => setIsHover(true)}
+                              onMouseLeave={() => setIsHover(false)}
                               id='workflow-dev'>
                               Sign in
                            </LoadingButton>

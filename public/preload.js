@@ -1,36 +1,39 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const { IPCEvents } = require('./ipc-api');
 
 const electronAPI = {
-    onSystemIdleTime: (callback) => {
-        ipcRenderer.on(IPCEvents.SystemIdleTime, callback);
-        return () => ipcRenderer.removeListener(IPCEvents.SystemIdleTime, callback);
+    /*
+     * Used for communication patterns where you send a request from React to Electron's main process and expect a response back.
+     * This trigger the ipcMain `handle` in the main process.
+    */
+    invoke: (channel, data) => {
+        return ipcRenderer.invoke(channel, data);
     },
-    onNotWorking: (callback) => {
-        ipcRenderer.on(IPCEvents.NotWorking, callback);
-        return () => ipcRenderer.removeListener(IPCEvents.NotWorking, callback);
+    /*
+     * Used for one-way communication where your React component needs to send a message to Electron's main process but doesn't expect an immediate response.
+     * This trigger the ipcMain `handle` in the main process.
+    */
+    send: (channel, data) => {
+        ipcRenderer.send(channel, data);
     },
-    notWorking: (data) => ipcRenderer.send(IPCEvents.NotWorking, data),
-    pauseProject: () => ipcRenderer.send(IPCEvents.Paused),
-    startProject: (data) => ipcRenderer.send(IPCEvents.ProjectStarted, data),
-    projectIdle: (data) => ipcRenderer.send(IPCEvents.Idle, data),
-    changeOnlineStatus: (data) => ipcRenderer.send(IPCEvents.OnlineStatusChanged, data),
-    appVersion: async () => {
-        let version = await ipcRenderer.invoke(IPCEvents.AppVersion);
-        return version;
+    /*
+    * Used to set up a listener in your React component to receive messages pushed from Electron's main process.
+    * This trigger the ipcMain `on` in the main process.
+    */
+    on: (channel, func) => {
+        ipcRenderer.on(channel, (event, ...args) => func(...args));
     },
-    getFromStore: async (key) => {
-        const storeData = await ipcRenderer.invoke(IPCEvents.GetFromStore, key);
-        return storeData;
+    once: (channel, func) => {
+        ipcRenderer.once(channel, (event, ...args) => func(...args));
     },
-    setToStore: async (key, value) => {
-        const storeData = await ipcRenderer.invoke(IPCEvents.SetToStore, key, value);
-        return storeData;
-    }, 
-    deleteFromStore: async (key) => {
-        let isDeleted = await ipcRenderer.invoke(IPCEvents.DeleteFromStore, key);
-        return isDeleted;
-    }, 
+    removeListener: (channel, func) => {
+        ipcRenderer.removeListener(channel, func);
+    },
+    removeAllListeners: (channel) => {
+        ipcRenderer.removeAllListeners(channel);
+    },
+    handle: (channel, func) => {
+        ipcRenderer.handle(channel, (event, ...args) => func(...args));
+    }
 }
 
 contextBridge.exposeInMainWorld('electronApi', electronAPI)

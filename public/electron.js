@@ -1,76 +1,98 @@
-const path = require('path');
-const axios = require('axios');
-const moment = require('moment');
-const { screen, dialog, systemPreferences } = require('electron');
-const DownloadManager = require('electron-download-manager');
-const { autoUpdater } = require('electron-updater');
-const logger = require('./logger');
-const activityTracker = require('./activity-tracker');
-const screenshotTracker = require('./screenshot-tracker');
-const appUsageTracker = require('./app-usage-tracker');
-const { IPCEvents } = require('./ipc-api');
-const { SecretsStore } = require("./secrets-store");
-let appInsights = require('applicationinsights');
-
-let idleInterval;
-let projectStart = false;
-
 const {
    app,
    BrowserWindow,
    ipcMain,
    globalShortcut,
-   powerMonitor
+   screen,
+   powerMonitor,
 } = require('electron');
-
+const path = require('path');
+const logger = require('../electron-utils/logger');
 const isDev = require('electron-is-dev');
+const { setupAppInsights } = require('../electron-utils/app-insights');
+const { setupAutoUpdater } = require('../electron-utils/auto-updater');
+const { setupStore } = require('../electron-utils/store');
+const { beforeCreateWindow, onlineStatusListener } = require('../electron-utils/utils');
+const { setupScreenshotTracker } = require('../electron-utils/screenshot-tracker');
+const { setupActivityTracker } = require('../electron-utils/activity-tracker');
+const { setupAppUsageTracker } = require('../electron-utils/app-usage-tracker');
 
-let host = 'https://app.klever.work';
-
-DownloadManager.register({
-   downloadFolder: app.getPath('downloads') + '/installer',
-});
-
-let win = null;
+let win;
 let splash;
 let idlepopup;
-let projectData = [];
+let isTimerRunning = false;
 
-// CONFIGURE AUTOUPDATER
-// cant rename this 'Thrive-VA' to 'Klever' as this is the name of the repo
-autoUpdater.setFeedURL({
-   provider: 'github',
-   owner: 'Thrive-VA',
-   repo: 'Desktop-App',
-   token: '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',
-   private: true,
-});
+// This method will be called when Electron has finished
+// initialization and is ready to create browser windows.
+// Some APIs can only be used after this event occurs.
+const shouldLock = app.requestSingleInstanceLock();
 
-function showIdlePopup() {
-   idlepopup = new BrowserWindow({
-      width: 400,
-      height: 400,
-      frame: false,
-      icon: __dirname + 'icon-new.icns',
-      alwaysOnTop: true,
-      webPreferences: {
-         nodeIntegration: true,
-         preload: path.join(__dirname, './idlepopup-preload.js'),
-         backgroundThrottling: false,
-         sandbox: false,
-      },
+if (!shouldLock) {
+   logger.info('App already running, quitting new instance');
+   app.quit();
+} else {
+   app.on('second-instance', () => {
+      logger.info('Second instance tried to run');
+
+      // Someone tried to run a second instance, we should focus our window.
+      if (win) {
+         if (win.isMinimized()) win.restore();
+         win.focus();
+      }
    });
-   idlepopup.loadURL(`file://${__dirname}/idlepopup.html`);
+
+   app.whenReady().then(async () => {
+      splash = new BrowserWindow({
+         width: 810,
+         height: 610,
+         transparent: true,
+         frame: false,
+         icon: __dirname + 'icon-new.icns',
+         alwaysOnTop: true,
+      });
+      splash.loadURL(`file://${__dirname}/splash.html`);
+
+      globalShortcut.register('CommandOrControl+R', () => { });
+      globalShortcut.register('F5', () => { });
+
+      beforeCreateWindow(app, createWindow);
+   });
 }
 
-function createWindow() {
+app.on('window-all-closed', async () => {
+   logger.info('Window all closed event');
+
+   if (process.platform !== 'darwin') {
+      logger.info('Closing application');
+      app.quit();
+   }
+});
+
+app.on('activate', () => {
+   // On macOS it's common to re-create a window in the app when the
+   // dock icon is clicked and there are no other windows open.
+   logger.info('App activated');
+   if (BrowserWindow.getAllWindows().length === 0) {
+      beforeCreateWindow(app, createWindow);
+   }
+});
+
+const createWindow = () => {
+   setupAppInsights();
+   setupAutoUpdater();
+   setupStore();
+   setupScreenshotTracker();
+   setupActivityTracker();
+   setupAppUsageTracker();
+   onlineStatusListener();
+
    // Create the browser window.
    let mainScreen = screen.getPrimaryDisplay();
    let dimensions = mainScreen.size;
 
    win = new BrowserWindow({
       width: 360,
-      height: dimensions.height - 20,
+      height: dimensions.height - 100,
       x: 10,
       y: 10,
       maximizable: true,
@@ -84,11 +106,8 @@ function createWindow() {
       },
       show: false,
    });
+
    win.webContents.setBackgroundThrottling(false);
-
-
-   win.webContents.executeJavaScript(`document.title="Klever ${app.getVersion()}";`);
-
    win.removeMenu();
 
    // and load the index.html of the app.
@@ -98,51 +117,13 @@ function createWindow() {
    win.once('ready-to-show', async () => {
       splash.destroy();
       win.show();
-
-      // check if screen recording permission is granted
-      if (process.platform === "darwin") {
-         const isTrusted = systemPreferences.isTrustedAccessibilityClient(true);
-         const status = systemPreferences.getMediaAccessStatus("screen");
-
-         if (!isTrusted || status == "denied") {
-            const dialogOpts = {
-               type: 'info',
-               buttons: ['Ok'],
-               title: 'Need Permissions',
-               message: 'Accessibility and Screen permissions are needed. Please restart the app after providing those permissions.',
-            };
-            dialog.showMessageBox(dialogOpts).then((response) => {
-               console.log('Permission not granted, quitting app');
-               app.quit();
-            });
-         } else {
-            const status = systemPreferences.getMediaAccessStatus("screen");
-            // if not granted, quit the app
-            if (status !== "granted") {
-               const permission = await screenshotTracker.checkScreenshotPermission();
-               if (permission === false) {
-                  console.log('Permission not granted, quitting app');
-                  app.quit();
-               }
-            }
-         }
-      } else {
-         const permission = await screenshotTracker.checkScreenshotPermission();
-         if (permission === false) {
-            console.log('Permission not granted, quitting app');
-            app.quit();
-         }
-      }
    });
 
    win.on('close', function (event) {
-
-      console.log('Window close event');
-
-      if (projectStart) {
+      logger.info('Window close event');
+      if (isTimerRunning) {
          // Prevent the window from actually closing
          event.preventDefault();
-
          // Minimize the window instead
          win.minimize();
       }
@@ -154,237 +135,58 @@ function createWindow() {
    }
 }
 
-//CHECK UPDATES
-if (!isDev) {
-   try {
-      autoUpdater.checkForUpdates();
-   } catch (err) {
-      dialog.showErrorBox(err.message, err.stack);
-   }
+function showIdlePopup() {
+   idlepopup = new BrowserWindow({
+      width: 400,
+      height: 400,
+      frame: false,
+      icon: __dirname + 'icon-new.icns',
+      alwaysOnTop: true,
+      webPreferences: {
+         nodeIntegration: true,
+         preload: path.join(__dirname, './preload.js'),
+         backgroundThrottling: false,
+         sandbox: false,
+      },
+   });
+   idlepopup.loadURL(`file://${__dirname}/idlepopup.html`);
 }
 
-// SHOWS A MESSAGE WHEN A UPDTE AVAILABLE
-autoUpdater.on('update-available', (_event, releaseNotes, releaseName) => {
-   console.log('Update available');
 
-   const dialogOpts = {
-      type: 'info',
-      buttons: ['Ok'],
-      title: 'Application Update',
-      message: process.platform === 'win32' ? releaseNotes : releaseName,
-      detail: 'A new version is being downloaded.',
-   };
-   dialog.showMessageBox(dialogOpts, (response) => { });
-});
-
-//ASKS TO USER TO RESTART THE APPLICATION WHEN THE UPDATE IS READY TO BE INSTALLED
-autoUpdater.on('update-downloaded', (_event, releaseNotes, releaseName) => {
-   console.log('Update downloaded');
-   const dialogOpts = {
-      type: 'info',
-      buttons: ['Restart', 'Later'],
-      title: 'Application Update',
-      message: process.platform === 'win32' ? releaseNotes : releaseName,
-      detail: 'A new version has been downloaded. Restart the application to apply the updates.',
-   };
-   dialog.showMessageBox(dialogOpts).then((returnValue) => {
-      if (returnValue.response === 0) {
-         setTimeout(() => {
-            autoUpdater.quitAndInstall();
-         }, 6000);
-      }
-   });
-});
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-const shouldLock = app.requestSingleInstanceLock();
-
-if (!shouldLock) {
-   console.log('App already running, quitting new instance');
-   app.quit();
-} else {
-   app.on('second-instance', (event, commandLine, workingDirectory) => {
-      console.log('Second instance tried to run');
-
-      // Someone tried to run a second instance, we should focus our window.
-      if (win) {
-         if (win.isMinimized()) win.restore();
-         win.focus();
-      }
-   });
-
-   app.whenReady().then(async () => {
-      // enable app insights
-      let key = `InstrumentationKey=7edd67c7-b077-4882-9a8f-576781bce19b;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/`;
-      try {
-         appInsights.setup(key);
-         appInsights.defaultClient.context.tags[appInsights.defaultClient.context.keys.cloudRole] = "Electron";
-         appInsights.start();
-      } catch (err) {
-         console.log('Error in setting up app insights', err);
-      }
-
-      splash = new BrowserWindow({
-         width: 810,
-         height: 610,
-         transparent: true,
-         frame: false,
-         icon: __dirname + 'icon-new.icns',
-         alwaysOnTop: true,
-      });
-      splash.loadURL(`file://${__dirname}/splash.html`);
-      createWindow();
-      globalShortcut.register('CommandOrControl+R', () => { });
-      globalShortcut.register('F5', () => { });
-
-      logger.log('App started');
-   });
-}
-
-app.on('window-all-closed', async () => {
-   console.log('Window all closed event');
-
-   if (process.platform !== 'darwin') {
-      if (projectStart) {
-         await handlePause();
-      }
-
-      logger.log('Closing application');
-      app.quit();
-   }
-});
-
-app.on('activate', () => {
-   // On macOS it's common to re-create a window in the app when the
-   // dock icon is clicked and there are no other windows open.
-   console.log('App activated');
-   if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-   }
-});
-
-// getting events from src
-
-const handlePause = async () => {
-   logger.log('Application Paused');
-
-   activityTracker.stop();
-   screenshotTracker.stop();
-   appUsageTracker.stop();
-
-   clearInterval(idleInterval);
-   idlepopup = null;
-   projectStart = false;
-};
-
-ipcMain.on(IPCEvents.Paused, async (event, data) => {
-   handlePause();
-});
-
-ipcMain.on(IPCEvents.Idle, async (event, data) => {
-   if (!idlepopup) showIdlePopup();
-});
-
-ipcMain.on(IPCEvents.NotWorking, async (event, data) => {
-   if (win) {
-      win.webContents.send(IPCEvents.NotWorking, data);
-      idlepopup.destroy();
-   }
-});
-
-ipcMain.handle(IPCEvents.GetFromStore, (_event, key) => {
-   try {
-      const data = SecretsStore.get(key);
-      return data;
-   } catch (error) {
-      console.error(`Failed to get data from SecretsStore:`, error);
-      return null;
-   }
-});
-
-ipcMain.handle(IPCEvents.SetToStore, (_event, key, value) => {
-   try {
-      SecretsStore.set(key, value);
-      return value;
-   } catch (error) {
-      console.error(`Failed to set data in SecretsStore:`, error);
-      return null;
-   }
-});
-
-ipcMain.handle(IPCEvents.DeleteFromStore, (_event, key) => {
-   try {
-      SecretsStore.delete(key);
-      return true;
-   } catch (error) {
-      console.error(`Failed to delete data from SecretsStore:`, error);
-      return false;
-   }
-});
-/*
-   sample data received from src
-   data = {
-      id: 1,
-      screenshot_tracking: true,
-      app_website_tracking: true,
-      productivity_tracking: true,
-   }
-*/
-ipcMain.on(IPCEvents.ProjectStarted, async (event, data) => {
-   logger.log('User Clocked IN');
-
-   projectStart = true;
-
-   // new activity tracker
-   activityTracker.start(data.userId, data.projectId, host);
-
-   // new screenshot tracker
-   screenshotTracker.start(data.userId, data.projectId, host);
-
-   // app activity tracking
-   appUsageTracker.start(data.userId, data.projectId, host);
-
-   // idle checking interval
-   idleInterval = setInterval(() => {
-      if (win) {
-         try {
-            win.webContents.send(IPCEvents.SystemIdleTime, powerMonitor.getSystemIdleTime());
-         } catch (err) {
-            console.log('Error in sending idle check event', err);
-         }
-      }
-   }, 1000);
-
-   try {
-      const storeProjectData = await SecretsStore.get("projectData");
-      projectData = storeProjectData.at(0);
-      logger.log('  Project Details: ' + JSON.stringify(projectData));
-      logger.log('  ------------------------------ ');
-   }
-   catch (err) {
-      console.log(err);
-   }
-});
-
-ipcMain.handle(IPCEvents.AppVersion, () => {
-   console.log('App version requested');
+ipcMain.handle('GetAppVersion', () => {
    return app.getVersion();
 });
 
-// SHOWS A MESSAGE WHEN THERE IS NO INTERNET CONNECTION
-ipcMain.on(IPCEvents.OnlineStatusChanged, (event, status) => {
-   console.log('OnlineStatusChanged', status);
-   if (status || !projectStart) return;
-   const dialogOpts = {
-      type: 'info',
-      buttons: ['Ok'],
-      title: 'No Internet Connection',
-      message: 'Please check your internet connection.',
-   };
-   dialog.showMessageBox(dialogOpts, (response) => { });
+ipcMain.handle('SetTimerRunning', (_event, status) => {
+   if (status) {
+      logger.info('Timer started');
+   } else {
+      logger.info('Timer stopped');
+   }
+   isTimerRunning = status;
 });
 
+ipcMain.on('ShowIdlePopup', () => {
+   if (!idlepopup) {
+      logger.info('Showing idle popup');
+      showIdlePopup();
+   }
+});
+
+ipcMain.handle('GetIdleTime', () => {
+   return powerMonitor.getSystemIdleTime()
+});
+
+ipcMain.on('IdlePopupResponse', (_event, response) => {
+   logger.info('Idle popup response main', response);
+   
+   if (win)
+      win.webContents.send('IdlePopupResponse2', response);
+
+   if (idlepopup) {
+      idlepopup.close();
+      idlepopup = null;
+   }
+});
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';

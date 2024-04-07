@@ -21,15 +21,13 @@ import '@fontsource/inter/900.css';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
-   <React.StrictMode>
       <ThemeProvider theme={theme}>
          <HashRouter>
             <AppInsightsContext.Provider value={reactPlugin}>
                <App />
             </AppInsightsContext.Provider>
          </HashRouter>
-      </ThemeProvider>
-   </React.StrictMode>,
+      </ThemeProvider>,
 );
 
 // If you want to start measuring performance in your app, pass a function

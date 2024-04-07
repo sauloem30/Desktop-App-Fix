@@ -242,7 +242,7 @@
 
         function isNotWorking(isNotWorking) {
             clearInterval(timerInterval);
-            window.electronApi?.notWorking(isNotWorking);
+            window.electronApi?.send('IdlePopupResponse', isNotWorking ? 'stop' : 'continue');
         }
 
         btnNo.addEventListener('click', () => {
