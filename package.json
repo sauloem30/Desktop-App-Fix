@@ -1,9 +1,9 @@
 {
-  "name": "klever-desktop-app-dev",
+  "name": "klever-desktop-app",
   "author": "IT OUTSOURCE PH",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "build": {
-    "appId": "com.klever_timeTracker_dev",
+    "appId": "com.klever_timeTracker",
     "productName": "Klever Desktop App",
     "mac": {
       "icon": "./public/icon-new.icns",

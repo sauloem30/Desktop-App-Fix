@@ -7,15 +7,15 @@ const {
    powerMonitor,
 } = require('electron');
 const path = require('path');
-const logger = require('../electron-utils/logger');
+const logger = require('./electron-utils/logger');
 const isDev = require('electron-is-dev');
-const { setupAppInsights } = require('../electron-utils/app-insights');
-const { setupAutoUpdater } = require('../electron-utils/auto-updater');
-const { setupStore } = require('../electron-utils/store');
-const { beforeCreateWindow, onlineStatusListener } = require('../electron-utils/utils');
-const { setupScreenshotTracker } = require('../electron-utils/screenshot-tracker');
-const { setupActivityTracker } = require('../electron-utils/activity-tracker');
-const { setupAppUsageTracker } = require('../electron-utils/app-usage-tracker');
+const { setupAppInsights } = require('./electron-utils/app-insights');
+const { setupAutoUpdater } = require('./electron-utils/auto-updater');
+const { setupStore } = require('./electron-utils/store');
+const { beforeCreateWindow, onlineStatusListener } = require('./electron-utils/utils');
+const { setupScreenshotTracker } = require('./electron-utils/screenshot-tracker');
+const { setupActivityTracker } = require('./electron-utils/activity-tracker');
+const { setupAppUsageTracker } = require('./electron-utils/app-usage-tracker');
 
 let win;
 let splash;
