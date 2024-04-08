@@ -21,6 +21,7 @@ let win;
 let splash;
 let idlepopup;
 let isTimerRunning = false;
+let isSetupDone = false;
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
@@ -56,6 +57,17 @@ if (!shouldLock) {
       globalShortcut.register('F5', () => { });
 
       beforeCreateWindow(app, createWindow);
+
+      if (!isSetupDone) {
+         setupAppInsights();
+         setupAutoUpdater();
+         setupStore();
+         setupScreenshotTracker();
+         setupActivityTracker();
+         setupAppUsageTracker();
+         onlineStatusListener();
+         isSetupDone = true;
+      }
    });
 }
 
@@ -78,14 +90,6 @@ app.on('activate', () => {
 });
 
 const createWindow = () => {
-   setupAppInsights();
-   setupAutoUpdater();
-   setupStore();
-   setupScreenshotTracker();
-   setupActivityTracker();
-   setupAppUsageTracker();
-   onlineStatusListener();
-
    // Create the browser window.
    let mainScreen = screen.getPrimaryDisplay();
    let dimensions = mainScreen.size;
@@ -179,7 +183,7 @@ ipcMain.handle('GetIdleTime', () => {
 
 ipcMain.on('IdlePopupResponse', (_event, response) => {
    logger.info('Idle popup response main', response);
-   
+
    if (win)
       win.webContents.send('IdlePopupResponse2', response);
 
