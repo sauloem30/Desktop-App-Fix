@@ -21,7 +21,7 @@ export default function Header() {
         setAnchorEl(null);
     };
 
-    const handleUserLogout = () => {
+    const handleUserLogout = async () => {
         logInfo('User logged out');
 
         const proceedToLogout = async () => {
@@ -33,6 +33,7 @@ export default function Header() {
         }
 
         if (activeProjectId > 0) {
+            await stopBackgroundService();
             logout(proceedToLogout)
         } else {
             proceedToLogout();

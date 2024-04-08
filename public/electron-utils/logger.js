@@ -27,8 +27,11 @@ const createLogger = () => winston.createLogger({
 const logDirPath = isDev ? '.' : app.getPath('userData');
 
 const logger = createLogger();
-logger.add(new winston.transports.File({ level: 'debug', filename: join(logDirPath, 'app.log'), options: { flags: 'a' } }));
-if (isDev) logger.add(new winston.transports.Console());
+const dateFilename = new Date().toISOString().split('T')[0];
+const logFileName = join(logDirPath, `app-${dateFilename}.log`);
+console.log('Logging to:', logFileName);
+logger.add(new winston.transports.File({ level: 'debug', filename: logFileName, options: { flags: 'a' } }));
+logger.add(new winston.transports.Console());
 
 ipcMain.handle("invokeLog", async (_event, { level, message, args }) => {
   logger[level](message, ...args);

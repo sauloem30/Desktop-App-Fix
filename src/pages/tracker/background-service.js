@@ -76,9 +76,7 @@ export const useIdleCheck = (counterInSeconds, inactivityTimeoffInSeconds, inact
                     (async () => {
                         idleTimeRef.current = 0;
                         setActiveProjectId(-1)
-                        stopActivityTracking();
-                        stopAppUsageTracking();
-                        await setIsTimerRunning(false);
+                        await stopBackgroundService();
                     })();
                 })
 
@@ -91,4 +89,16 @@ export const useIdleCheck = (counterInSeconds, inactivityTimeoffInSeconds, inact
             electronApi.removeListener('IdlePopupResponse2', listener);
         };
     }, []);
+}
+
+export const startBackgroundService = async () => {
+    await setIsTimerRunning(true);
+    startActivityTracking();
+    startAppUsageTracking();
+}
+
+export const stopBackgroundService = async () => {
+    await setIsTimerRunning(false);
+    stopActivityTracking();
+    stopAppUsageTracking();
 }

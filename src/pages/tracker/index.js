@@ -7,8 +7,7 @@ import { Box, Grid, Paper } from '@mui/material'
 import { useGetProjects, useGetUserDetails, useHeartbeat, useStartStop } from './api-service';
 import TrackerContext from './TrackerContext';
 import { useTimer, useWeeklyLimitChecker } from './timer-service';
-import { startActivityTracking, startAppUsageTracking, stopActivityTracking, useBackgroundService, stopAppUsageTracking, useIdleCheck } from './background-service';
-import { setIsTimerRunning } from '../../utils/electronApi';
+import { useBackgroundService, useIdleCheck } from './background-service';
 import AppContext from '../../AppContext';
 
 export default function Main() {
@@ -37,21 +36,6 @@ export default function Main() {
 
     // check for idle time
     useIdleCheck(counterInSeconds, inactivityTimeoffInSeconds, inactivityLogout, setActiveProjectId);
-
-    // notify electron if timer is running or not
-    useEffect(() => {
-        (async () => {
-            if (activeProjectId > 0) {
-                await setIsTimerRunning(true);
-                startActivityTracking();
-                startAppUsageTracking();
-            } else if (activeProjectId === 0) {
-                await setIsTimerRunning(false);
-                stopActivityTracking();
-                stopAppUsageTracking();
-            }
-        })();
-    }, [activeProjectId]);
 
     useEffect(() => {
         if (!isOnline) {

@@ -71,12 +71,17 @@ export const useHeartbeat = (conter, callback) => {
 export const useStartStop = (activeProjectId, setErrorMessage, fetchProjects) => {
     const navigate = useNavigate();
 
+    // notify electron if timer is running or not
     useEffect(() => {
-        if (activeProjectId > 0) {
-            start(activeProjectId);
-        } else if (activeProjectId === 0) {
-            stop(fetchProjects);
-        }
+        (async () => {
+            if (activeProjectId > 0) {
+                start(activeProjectId);
+                await startBackgroundService();
+            } else if (activeProjectId === 0) {
+                stop(fetchProjects);
+                await stopBackgroundService();
+            }
+        })();
     }, [activeProjectId]);
 
     const start = (project_id) => {

@@ -5,7 +5,7 @@ import ForgetPassword from "./pages/auth/forgotPassword/ForgetPassword";
 import './App.css'
 import AppContext from "./AppContext";
 import Tracker from "./pages/tracker";
-import { getAppVersion, setToStore, onlineStatusChanged } from "./utils/electronApi";
+import { getAppVersion, setToStore, onlineStatusChanged, checkForUpdate } from "./utils/electronApi";
 import { logInfo } from "./utils/loggerHelper";
 
 function App() {
@@ -40,9 +40,11 @@ function App() {
   }, []);
 
   // save base url to store
+  // and check for update
   useEffect(() => {
     (async () => {
       await setToStore('baseUrl', process.env.REACT_APP_API_BASE_URL);
+      await checkForUpdate();
     })()
   }, []);
 

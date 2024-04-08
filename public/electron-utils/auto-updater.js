@@ -18,53 +18,69 @@ const setupAutoUpdater = () => {
     // SHOWS A MESSAGE WHEN A UPDTE AVAILABLE
     autoUpdater.on('update-available', (info) => {
         logger.info('Update available');
-        const newVersion = info.version;
-        dialog.showMessageBox({
-            type: 'info',
-            title: 'Update Available',
-            message: `A new version (${newVersion}) is available. Do you want to download it now?`,
-            buttons: ['Yes', 'Later']
-        }).then((result) => {
-            if (result.response === 0) { // 'Yes' button clicked
-                logger.info('Downloading the update');
-                autoUpdater.downloadUpdate();
-            }
-        });
+        try {
+            const newVersion = info.version;
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'Update Available',
+                message: `A new version (${newVersion}) is available. Do you want to download it now?`,
+                buttons: ['Yes', 'Later']
+            }).then((result) => {
+                if (result.response === 0) { // 'Yes' button clicked
+                    logger.info('Downloading the update');
+                    autoUpdater.downloadUpdate();
+                }
+            });
+        } catch (error) {
+            logger.error('Error in update available', error);
+        }
     });
 
     //ASKS TO USER TO RESTART THE APPLICATION WHEN THE UPDATE IS READY TO BE INSTALLED
     autoUpdater.on('update-downloaded', (info) => {
         logger.info('Update downloaded');
-        dialog.showMessageBox({
-            type: 'info',
-            title: 'Update Ready',
-            message: `Version ${info.version} has been downloaded. Restart the application to apply the updates?`,
-            buttons: ['Restart Now', 'Later']
-        }).then((result) => {
-            if (result.response === 0) { // 'Restart Now' button clicked
-                logger.info('Restarting the application to install the updates');
-                setTimeout(() => {
-                    autoUpdater.quitAndInstall();
-                }, 6000);
-            }
-        });
+        try {
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'Update Ready',
+                message: `Version ${info.version} has been downloaded. Restart the application to apply the updates?`,
+                buttons: ['Restart Now', 'Later']
+            }).then((result) => {
+                if (result.response === 0) { // 'Restart Now' button clicked
+                    logger.info('Restarting the application to install the updates');
+                    setTimeout(() => {
+                        autoUpdater.quitAndInstall();
+                    }, 6000);
+                }
+            });
+        } catch (error) {
+            logger.error('Error in update downloaded', error);
+        }
     });
 
     // SHOWS A MESSAGE WHEN NO UPDATES AVAILABLE
     autoUpdater.on('update-not-available', () => {
         logger.info('No updates available');
-        dialog.showMessageBox({
-            type: 'info',
-            title: 'No Updates Available',
-            message: 'Your application is up-to-date.'
-        });
+        try {
+            dialog.showMessageBox({
+                type: 'info',
+                title: 'No Updates Available',
+                message: 'Your application is up-to-date.'
+            });
+        } catch (error) {
+            logger.error('Error in update not available', error);
+        }
     });
 
     // Manually initiate an update check
     ipcMain.handle('CheckForUpdate', async () => {
         logger.info('Checking for updates');
         if (isDev) return;
-        await autoUpdater.checkForUpdates();
+        try {
+            await autoUpdater.checkForUpdates();
+        } catch (error) {
+            logger.error('Error in check for updates', error);
+        }
     });
 }
 
