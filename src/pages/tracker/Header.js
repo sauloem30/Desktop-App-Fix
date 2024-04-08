@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { checkForUpdate, deleteFromStore } from '../../utils/electronApi';
 import TrackerContext from './TrackerContext';
 import { logInfo } from '../../utils/loggerHelper';
+import { stopBackgroundService } from './background-service';
 
 export default function Header() {
     const navigate = useNavigate();

@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axios-instance';
+import { startBackgroundService, stopBackgroundService } from './background-service';
 
 export const useGetProjects = () => {
     const navigate = useNavigate();
