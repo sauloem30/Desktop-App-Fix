@@ -19,18 +19,8 @@ const setupAutoUpdater = () => {
     autoUpdater.on('update-available', (info) => {
         logger.info('Update available');
         try {
-            const newVersion = info.version;
-            dialog.showMessageBox({
-                type: 'info',
-                title: 'Update Available',
-                message: `A new version (${newVersion}) is available. Do you want to download it now?`,
-                buttons: ['Yes', 'Later']
-            }).then((result) => {
-                if (result.response === 0) { // 'Yes' button clicked
-                    logger.info('Downloading the update');
-                    autoUpdater.downloadUpdate();
-                }
-            });
+            logger.info('Downloading the update');
+            autoUpdater.downloadUpdate();
         } catch (error) {
             logger.error('Error in update available', error);
         }
@@ -78,8 +68,10 @@ const setupAutoUpdater = () => {
         if (isDev) return;
         try {
             await autoUpdater.checkForUpdates();
+            return true;
         } catch (error) {
             logger.error('Error in check for updates', error);
+            return false;
         }
     });
 }

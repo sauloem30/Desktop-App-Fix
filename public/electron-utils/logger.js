@@ -33,8 +33,4 @@ console.log('Logging to:', logFileName);
 logger.add(new winston.transports.File({ level: 'debug', filename: logFileName, options: { flags: 'a' } }));
 logger.add(new winston.transports.Console());
 
-ipcMain.handle("invokeLog", async (_event, { level, message, args }) => {
-  logger[level](message, ...args);
-});
-
 module.exports = logger;

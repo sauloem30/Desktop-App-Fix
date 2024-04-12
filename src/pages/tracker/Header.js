@@ -7,13 +7,16 @@ import { checkForUpdate, deleteFromStore } from '../../utils/electronApi';
 import TrackerContext from './TrackerContext';
 import { logInfo } from '../../utils/loggerHelper';
 import { stopBackgroundService } from './background-service';
+import AppContext from '../../AppContext';
 
 export default function Header() {
     const navigate = useNavigate();
+    const { setErrorMessage } = React.useContext(AppContext);
     const { logout, activeProjectId } = React.useContext(TrackerContext);
 
     const [anchorEl, setAnchorEl] = React.useState(null);
     const open = Boolean(anchorEl);
+    const [loading, setLoading] = React.useState(false);
 
     const handleClick = (event) => {
         setAnchorEl(event.currentTarget);
@@ -42,8 +45,20 @@ export default function Header() {
     };
 
     const handleCheckForUpdate = async () => {
+        setLoading(true);
+        setErrorMessage('Checking for update. Please wait...');
         handleClose();
-        await checkForUpdate();
+        checkForUpdate()
+            .then((res) => {
+                if (!res)
+                    setErrorMessage('Error in checking for update');
+            })
+            .catch(() => {
+                setErrorMessage('Error in checking for update');
+            })
+            .finally(() => {
+                setLoading(false);
+            });
     }
 
     return (
@@ -78,7 +93,7 @@ export default function Header() {
                 open={open}
                 onClose={handleClose}
             >
-                <MenuItem onClick={handleCheckForUpdate}>Check for update</MenuItem>
+                <MenuItem onClick={handleCheckForUpdate} disabled={loading} title={loading ? 'Please wait': ''}>Check for update</MenuItem>
                 <MenuItem onClick={handleUserLogout}>Logout</MenuItem>
             </Menu>
         </>

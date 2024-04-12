@@ -59,6 +59,7 @@ if (!shouldLock) {
       beforeCreateWindow(app, createWindow);
 
       if (!isSetupDone) {
+         setupIpcListenersMain();
          setupAppInsights();
          setupAutoUpdater();
          setupStore();
@@ -156,41 +157,47 @@ function showIdlePopup() {
    idlepopup.loadURL(`file://${__dirname}/idlepopup.html`);
 }
 
+const setupIpcListenersMain = () => {
 
-ipcMain.handle('GetAppVersion', () => {
-   return app.getVersion();
-});
+   ipcMain.handle('GetAppVersion', () => {
+      return app.getVersion();
+   });
 
-ipcMain.handle('SetTimerRunning', (_event, status) => {
-   if (status) {
-      logger.info('Timer started');
-   } else {
-      logger.info('Timer stopped');
-   }
-   isTimerRunning = status;
-});
+   ipcMain.handle('SetTimerRunning', (_event, status) => {
+      if (status) {
+         logger.info('Timer started');
+      } else {
+         logger.info('Timer stopped');
+      }
+      isTimerRunning = status;
+   });
 
-ipcMain.on('ShowIdlePopup', () => {
-   if (!idlepopup) {
-      logger.info('Showing idle popup');
-      showIdlePopup();
-   }
-});
+   ipcMain.on('ShowIdlePopup', () => {
+      if (!idlepopup) {
+         logger.info('Showing idle popup');
+         showIdlePopup();
+      }
+   });
 
-ipcMain.handle('GetIdleTime', () => {
-   return powerMonitor.getSystemIdleTime()
-});
+   ipcMain.handle('GetIdleTime', () => {
+      return powerMonitor.getSystemIdleTime()
+   });
 
-ipcMain.on('IdlePopupResponse', (_event, response) => {
-   logger.info('Idle popup response main', response);
+   ipcMain.on('IdlePopupResponse', (_event, response) => {
+      logger.info('Idle popup response main', response);
 
-   if (win)
-      win.webContents.send('IdlePopupResponse2', response);
+      if (win)
+         win.webContents.send('IdlePopupResponse2', response);
 
-   if (idlepopup) {
-      idlepopup.close();
-      idlepopup = null;
-   }
-});
+      if (idlepopup) {
+         idlepopup.close();
+         idlepopup = null;
+      }
+   });
+
+   ipcMain.handle("invokeLog", async (_event, { level, message, args }) => {
+      logger[level](message, ...args);
+   });
+};
 
 process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
