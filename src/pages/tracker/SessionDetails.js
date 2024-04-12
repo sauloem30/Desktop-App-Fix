@@ -2,15 +2,17 @@ import React from 'react'
 import { getHourMin, getHourMinSec, getHoursWithOutZero } from '../../utils';
 import { Typography, Box } from '@mui/material'
 import TrackerContext from './TrackerContext';
+import AppContext from '../../AppContext';
 
 export default function SessionDetails() {
+    const { errorMessage } = React.useContext(AppContext);
+
     const {
         currentSession,
         weeklyLimitInSeconds,
         totalToday,
         totalThisWeek,
         isLimitReached,
-        errorMessage,
     } = React.useContext(TrackerContext);
 
     const getWeeklyLimitDisplay = () => {

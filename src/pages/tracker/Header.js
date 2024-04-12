@@ -42,8 +42,8 @@ export default function Header() {
     };
 
     const handleCheckForUpdate = async () => {
-        await checkForUpdate();
         handleClose();
+        await checkForUpdate();
     }
 
     return (

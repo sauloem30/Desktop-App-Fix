@@ -10,7 +10,10 @@ import { logInfo } from "./utils/loggerHelper";
 
 function App() {
 
+  const timeoutRef = React.useRef();
   const [isOnline, setIsOnline] = useState(true);
+  const [errorMessage, setErrorMessage] = React.useState();
+  const [errorMessageTemp, setErrorMessageTemp] = React.useState();
 
   useEffect(() => {
     // detect internet connection
@@ -48,8 +51,37 @@ function App() {
     })()
   }, []);
 
+  useEffect(() => {
+    clearTimeout(timeoutRef.current);
+
+    setErrorMessage(errorMessageTemp?.message);
+
+    timeoutRef.current = setTimeout(() => {
+      setErrorMessage('');
+      if (errorMessageTemp?.callback) {
+        errorMessageTemp.callback();
+      }
+    }, errorMessageTemp?.timeout);
+
+    return () => {
+      clearTimeout(timeoutRef.current);
+    }
+  }, [errorMessageTemp]);
+
+  const beforeSetErrorMessage = (message, timeout, callback) => {
+    setErrorMessageTemp({
+      message,
+      timeout: timeout || 5000,
+      callback,
+    });
+  }
+
   return (
-    <AppContext.Provider value={{ isOnline }}>
+    <AppContext.Provider value={{
+      isOnline,
+      errorMessage,
+      setErrorMessage: beforeSetErrorMessage,
+    }}>
       <Routes>
         <Route exact path="/" element={<Signin />} />
         <Route exact path="/forgotpassword" element={<ForgetPassword />} />

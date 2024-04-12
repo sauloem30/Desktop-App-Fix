@@ -85,17 +85,18 @@ const setupActivityTracker = () => {
     try {
         uIOhook.on('keydown', (e) => {
             number_of_keypress++;
+        });
+
+        uIOhook.on('click', (e) => {
+            number_of_clicks++;
+        });
+
+        uIOhook.on('input', (e) => {
             if (!hasActivity) {
                 hasActivity = true;
             }
         });
 
-        uIOhook.on('click', (e) => {
-            number_of_clicks++;
-            if (!hasActivity) {
-                hasActivity = true;
-            }
-        });
     } catch (error) {
         logger.error('Error in uIOhook listeners', error.message);
     }

@@ -12,12 +12,10 @@ import AppContext from '../../AppContext';
 
 export default function Main() {
     const classes = useStyles();
-    const { isOnline } = React.useContext(AppContext);
+    const { isOnline, setErrorMessage } = React.useContext(AppContext);
 
+    const [timelogId, setTimelogId] = React.useState(0);
     const [activeProjectId, setActiveProjectId] = React.useState(-1);
-    const [errorMessage, setErrorMessage] = React.useState();
-
-    const netStatusRef = React.useRef();
 
     const { projects, totalToday, fetchProjects } = useGetProjects();
 
@@ -25,9 +23,9 @@ export default function Main() {
 
     const { counterInSeconds, counterInMinutes } = useTimer(activeProjectId);
 
-    useHeartbeat(counterInMinutes, fetchProjects);
+    useHeartbeat(counterInMinutes, timelogId, fetchProjects);
 
-    const { logout, inactivityLogout } = useStartStop(activeProjectId, setErrorMessage, fetchProjects);
+    const { logout, inactivityLogout } = useStartStop(activeProjectId, fetchProjects, setTimelogId);
 
     const { totalThisWeek, isWeeklyLimitReached } = useWeeklyLimitChecker(weeklyLimitInSeconds, totalToday);
 
@@ -41,21 +39,14 @@ export default function Main() {
         if (!isOnline) {
             const message = 'You are offline. Please check your internet connection.';
             if (activeProjectId > 0) {
-                setErrorMessage(`${message} The tracker will automatically pause in 5 minutes.`);
-                netStatusRef.current = setTimeout(() => {
+                setErrorMessage(`${message} The tracker will automatically pause in 5 minutes.`, 300000, () => { 
                     setActiveProjectId(0);
-                    setErrorMessage(message);
-                }, 300000);
+                 });
             } else {
                 setErrorMessage(message);
             }
         } else {
             setErrorMessage('');
-            clearTimeout(netStatusRef.current);
-        }
-
-        return () => {
-            clearTimeout(netStatusRef.current);
         }
     }, [isOnline, activeProjectId]);
 
@@ -81,8 +72,6 @@ export default function Main() {
                                 currentSession: counterInSeconds,
                                 activeProjectId,
                                 setActiveProjectId,
-                                errorMessage,
-                                setErrorMessage,
                                 totalThisWeek,
                                 isLimitReached: isWeeklyLimitReached,
                                 logout

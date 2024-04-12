@@ -1,9 +1,11 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../utils/axios-instance';
 import { startBackgroundService, stopBackgroundService } from './background-service';
+import AppContext from '../../AppContext';
 
 export const useGetProjects = () => {
+    const { setErrorMessage } = React.useContext(AppContext);
     const navigate = useNavigate();
     const [projects, setProjects] = useState([]);
     const [totalToday, setTotalToday] = useState(0);
@@ -17,6 +19,8 @@ export const useGetProjects = () => {
             .catch((error) => {
                 if (error.response.status === 401 || error.response.status === 403) {
                     navigate('/');
+                } else if (error.message === 'Network Error' || error.response.status >= 500) {
+                    setErrorMessage('Unable to connect to the server.', 45000);
                 }
             });
     }, []);
@@ -29,6 +33,7 @@ export const useGetProjects = () => {
 }
 
 export const useGetUserDetails = () => {
+    const { setErrorMessage } = React.useContext(AppContext);
     const navigate = useNavigate();
     const [user, setUser] = useState({});
     const [weeklyLimitInSeconds, setWeeklyLimitInSeconds] = useState(0);
@@ -44,6 +49,8 @@ export const useGetUserDetails = () => {
             .catch((error) => {
                 if (error.response.status === 401 || error.response.status === 403) {
                     navigate('/');
+                } else if (error.message === 'Network Error' || error.response.status >= 500) {
+                    setErrorMessage('Unable to connect to the server.', 45000);
                 }
             });
     }, []);
@@ -51,25 +58,29 @@ export const useGetUserDetails = () => {
     return { user, weeklyLimitInSeconds, inactivityTimeoffInSeconds };
 }
 
-export const useHeartbeat = (conter, callback) => {
+export const useHeartbeat = (conter, timelogId, callback) => {
+    const { setErrorMessage } = React.useContext(AppContext);
     const navigate = useNavigate();
 
     useEffect(() => {
         if (conter > 0) {
-            axiosInstance.post('/tracker-app/heartbeat')
+            axiosInstance.post('/tracker-app/heartbeat', { timelogId })
                 .then(() => {
                     callback();
                 })
                 .catch((error) => {
                     if (error.response.status === 401 || error.response.status === 403) {
                         navigate('/');
+                    } else if (error.message === 'Network Error' || error.response.status >= 500) {
+                        setErrorMessage('Unable to connect to the server.', 45000);
                     }
                 });
         }
-    }, [conter]);
+    }, [conter, timelogId]);
 }
 
-export const useStartStop = (activeProjectId, setErrorMessage, fetchProjects) => {
+export const useStartStop = (activeProjectId, fetchProjects, setTimelogId) => {
+    const { setErrorMessage } = React.useContext(AppContext);
     const navigate = useNavigate();
 
     // notify electron if timer is running or not
@@ -107,10 +118,11 @@ export const useStartStop = (activeProjectId, setErrorMessage, fetchProjects) =>
 
     const submitRequest = (endpoint, project_id, callback, idleTime) => {
         axiosInstance.post(endpoint, { idleTime, project_id })
-            .then(({ data: { error } }) => {
+            .then(({ data: { error, id } }) => {
                 if (error) {
                     setErrorMessage(error);
                 } else {
+                    setTimelogId(id);
                     if (callback)
                         callback();
                 }
@@ -118,6 +130,8 @@ export const useStartStop = (activeProjectId, setErrorMessage, fetchProjects) =>
             .catch((error) => {
                 if (error.response.status === 401 || error.response.status === 403) {
                     navigate('/');
+                } else if (error.message === 'Network Error' || error.response.status >= 500) {
+                    setErrorMessage('Unable to connect to the server.', 45000);
                 }
             });
     }
