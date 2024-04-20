@@ -3,7 +3,6 @@ const {
    BrowserWindow,
    ipcMain,
    globalShortcut,
-   screen,
    powerMonitor,
 } = require('electron');
 const path = require('path');
@@ -92,12 +91,10 @@ app.on('activate', () => {
 
 const createWindow = () => {
    // Create the browser window.
-   let mainScreen = screen.getPrimaryDisplay();
-   let dimensions = mainScreen.size;
 
    win = new BrowserWindow({
       width: 360,
-      height: dimensions.height - 100,
+      height: 850,
       x: 10,
       y: 10,
       maximizable: true,
