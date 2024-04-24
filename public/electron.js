@@ -57,6 +57,15 @@ if (!shouldLock) {
 
       beforeCreateWindow(app, createWindow);
 
+      app.on('activate', () => {
+         // On macOS it's common to re-create a window in the app when the
+         // dock icon is clicked and there are no other windows open.
+         logger.info('App activated');
+         if (BrowserWindow.getAllWindows().length === 0) {
+            beforeCreateWindow(app, createWindow);
+         }
+      });
+
       if (!isSetupDone) {
          setupIpcListenersMain();
          setupAppInsights();
@@ -77,15 +86,6 @@ app.on('window-all-closed', async () => {
    if (process.platform !== 'darwin') {
       logger.info('Closing application');
       app.quit();
-   }
-});
-
-app.on('activate', () => {
-   // On macOS it's common to re-create a window in the app when the
-   // dock icon is clicked and there are no other windows open.
-   logger.info('App activated');
-   if (BrowserWindow.getAllWindows().length === 0) {
-      beforeCreateWindow(app, createWindow);
    }
 });
 
