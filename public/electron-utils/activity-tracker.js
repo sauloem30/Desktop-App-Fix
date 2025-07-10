@@ -26,35 +26,44 @@ const setupActivityTracker = () => {
     let productivity_score = 0;
     let hasActivity = false;
     let intervalHasActivityCheck;
+    let activityStarted = false;
 
     const resetActivity = () => {
         number_of_keypress = 0;
         number_of_clicks = 0;
         productivity_score = 0;
         hasActivity = false;
-    }
+    };
 
     const stopHook = () => {
         try {
+            uIOhook.removeAllListeners();
             uIOhook.stop();
         } catch (error) {
             logger.error('Error in stopping uIOhook', error.message);
         }
-    }
+    };
 
     const startHook = () => {
         try {
+            uIOhook.on('keydown', () => number_of_keypress++);
+            uIOhook.on('click', () => number_of_clicks++);
+            uIOhook.on('input', () => { hasActivity = true; });
             uIOhook.start();
         } catch (error) {
             logger.error('Error in starting uIOhook', error.message);
         }
-    }
+    };
 
-    ipcMain.on('start-activity-tracking', (event) => {
+    ipcMain.on('start-activity-tracking', () => {
+        if (activityStarted) return;
+        activityStarted = true;
+
         logger.info('Starting activity tracking');
         resetActivity();
-        stopHook();
+        stopHook();      // just in case something was already running
         startHook();
+
         intervalHasActivityCheck = setInterval(() => {
             if (hasActivity) {
                 productivity_score++;
@@ -63,7 +72,10 @@ const setupActivityTracker = () => {
         }, 1000);
     });
 
-    ipcMain.on('stop-activity-tracking', (event) => {
+    ipcMain.on('stop-activity-tracking', () => {
+        if (!activityStarted) return;
+        activityStarted = false;
+
         logger.info('Stopping activity tracking');
         resetActivity();
         stopHook();
@@ -81,25 +93,6 @@ const setupActivityTracker = () => {
         };
         uploadData(data, resetActivity);
     });
-
-    try {
-        uIOhook.on('keydown', (e) => {
-            number_of_keypress++;
-        });
-
-        uIOhook.on('click', (e) => {
-            number_of_clicks++;
-        });
-
-        uIOhook.on('input', (e) => {
-            if (!hasActivity) {
-                hasActivity = true;
-            }
-        });
-
-    } catch (error) {
-        logger.error('Error in uIOhook listeners', error.message);
-    }
-}
+};
 
 module.exports = { setupActivityTracker };
